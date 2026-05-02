@@ -1,0 +1,58 @@
+x-backend-common: &backend_common
+  image: game:${APP_VERSION:-latest}
+  working_dir: /app
+  volumes:
+    - .:/app
+  env_file:
+    - .env
+  user: "${UID}:${GID}"
+  environment:
+    USER: "${UID}"
+    LOGNAME: "${UID}"
+  restart: unless-stopped
+
+services:
+  core:
+    <<: *backend_common
+    container_name: game-core-${CONT_PREFIX:-prod}
+    command: ["poetry", "run", "python", "-m", "app.main", "0.0.0.0", "8000"]
+    depends_on:
+      - db
+      - redis
+
+  web:
+    <<: *backend_common
+    container_name: geme-web-${CONT_PREFIX:-prod}
+    command: ["poetry", "run", "python", "-m", "app.run_web", "0.0.0.0", "8000"]
+    depends_on:
+      - core
+    ports:
+      - "${HOST:-127.0.0.1}:${PORT:-8000}:8000"
+
+  db:
+    image: mariadb:10.4
+    container_name: game-mariadb
+    command:
+      - "--character-set-server=utf8mb4"
+      - "--collation-server=utf8mb4_unicode_ci"
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    restart: unless-stopped
+    environment:
+      - MYSQL_DATABASE=${DB_NAME}
+      - MYSQL_USER=${DB_USER}
+      - MYSQL_PASSWORD=${DB_PASS}
+      - MYSQL_ROOT_PASSWORD=321
+      - TZ=UTC
+
+  redis:
+    image: redis:7-alpine
+    container_name: game-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    restart: unless-stopped
+
+volumes:
+  mariadb-data:
+  redisdata:
