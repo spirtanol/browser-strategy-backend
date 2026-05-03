@@ -2,7 +2,7 @@ import asyncio
 import signal
 from typing import Callable, AsyncContextManager
 
-from app.bootstrap.container import get_context_container, CommandHandlerService, Mode
+from app.bootstrap.container import get_context_container, CommandHandlerService
 from app.core.engine import Engine
 from app.core.disposer import dispose
 from app.schemas.commands import GameCommand
@@ -24,8 +24,13 @@ async def command_subscribe(
         except Exception as e:
             print(f'Ошибка при обработке команды {e}')
 
+async def life_state_loop(check_func: Callable, interval: int, is_running: Callable[[], bool]):
+    while is_running():
+        await asyncio.sleep(interval)
+        await check_func()
+
 async def _run():
-    async with get_context_container(Mode.CORE) as container:
+    async with get_context_container() as container:
         config = container.config
 
         redis_client = container.get_redis()
@@ -43,7 +48,7 @@ async def _run():
 
         game_loop = asyncio.create_task(engine.run())
         asyncio.create_task(command_subscribe(subscriber, container.command_handler_service, lambda: engine.is_running, container.begin))
-        
+        asyncio.create_task(life_state_loop(container.life_state_registry.check_active, config.alive_objects_duration, lambda: engine.is_running))
 
         def handle_stop_signal():
             print("Получен сигнал SIGTERM от Docker, останавливаемся...")

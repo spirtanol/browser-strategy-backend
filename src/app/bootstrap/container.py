@@ -4,54 +4,59 @@ from typing import AsyncGenerator, Optional
 import enum
 
 from app.core.config import AppSettings, get_config
+from app.core.db import get_engine, get_session_maker, AsyncSession, get_redis, Redis
 from app.services.ship import ShipService, ShipRepository
 from app.services.command_handler import CommandHandlerService
-from app.services.command_dispatcher import ComandDispatherService
-from app.core.db import get_engine, get_session_maker, AsyncSession, get_redis, Redis
+from app.services.command_dispatcher import CommandDispatherService
+from app.services.client_ship import ClientShipService
+from app.services.lifestate.pusher import LifeStatePusher
+from app.services.lifestate.registry import LifeStateRegistry
 
-
-class Mode:
-    CORE = 1
-    API = 2
 
 class Container:
-    def __init__(self, config: AppSettings, mode: Mode):
+    def __init__(self, config: AppSettings):
         self.config = config
         self._session = None
-        self.mode = mode
-
-    @cached_property
-    def _ship_repository(self) -> ShipRepository:
-        from app.repositories.ship_redis import ShipRedisRepository
-
-        redis_repository = ShipRedisRepository(redis_factory=self.get_redis)
-
-        if self.mode == Mode.CORE:
-            from app.repositories.ship_composite import ShipCompositeRepository, ShipSQLRepository
-            composite_repository = ShipCompositeRepository(
-                sql_repository=ShipSQLRepository(self.get_session),
-                redis_repository=redis_repository
-            )
-            return composite_repository
-
-        # API
-        return redis_repository
 
     @cached_property
     def ship_service(self) -> ShipService:
         return ShipService(
-            repository=self._ship_repository
+            repository=ShipRepository(self.get_session),
+            redis_factory=self.get_redis,
+            life_state_registry=self.life_state_registry
+        )
+
+    @cached_property
+    def client_ship_service(self) -> ClientShipService:
+        return ClientShipService(
+            redis_factory=self.get_redis, 
+            life_state_pusher=self.life_state_pusher,
+            command_dispatcher=self.command_dispatcher_service
         )
 
     @cached_property
     def command_handler_service(self) -> CommandHandlerService:
         return CommandHandlerService(
-            ship_service=self.ship_service
+            ship_service=self.ship_service,
+            life_state_registry=self.life_state_registry
         )
 
     @cached_property
-    def command_dispatcher_service(self) -> ComandDispatherService:
-        return ComandDispatherService(
+    def command_dispatcher_service(self) -> CommandDispatherService:
+        return CommandDispatherService(
+            redis_factory=self.get_redis
+        )
+    
+    @cached_property
+    def life_state_pusher(self) -> LifeStatePusher:
+        return LifeStatePusher(
+            redis_factory=self.get_redis,
+            ttl=self.config.alive_objects_duration
+        )
+
+    @cached_property
+    def life_state_registry(self) -> LifeStateRegistry:
+        return LifeStateRegistry(
             redis_factory=self.get_redis
         )
 
@@ -91,10 +96,9 @@ class Container:
             await self._session.close()
             self._session = None
 
-async def get_container(mode: Mode = Mode.CORE) -> Container:
+async def get_container() -> Container:
     container = Container(
-        config=get_config(),
-        mode=mode
+        config=get_config()
     )
     yield container
 

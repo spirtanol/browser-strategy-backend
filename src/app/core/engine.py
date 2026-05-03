@@ -44,7 +44,7 @@ class Engine:
                         ship.update(dt)
                     
                     # Можно сбрасывать данные не каждый тик
-                    await self.ship_service.flush(ships)
+                    await self.ship_service.flush()
 
                 last_time = current_time
 
@@ -60,8 +60,7 @@ class Engine:
             print("Сохраняем прогресс...")
             async def final_save():
                 async with self.transaction_manager():
-                    ships = await self.ship_service.get_all()
-                    await self.ship_service.save(ships)
+                    await self.ship_service.save()
                     
             await asyncio.shield(final_save())
             print("Прогресс сохранен. Выход.")

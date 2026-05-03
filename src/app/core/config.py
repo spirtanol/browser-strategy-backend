@@ -21,7 +21,7 @@ class AppSettings(BaseSettings):
     redis_url: str = Field(..., env='REDIS_URL')
     dt_multiplier: float = 480
     tick_duration: int = 1
-    
+    alive_objects_duration: int = 60
 
 class DevelopmentSettings(AppSettings):
     debug: bool = True
