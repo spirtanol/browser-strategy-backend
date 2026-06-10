@@ -5,8 +5,7 @@ from .resources_pool import ResourcesPool
 class Storage:
     def __init__(self):
         self._contents: dict[StorageItemType, int] = {}
-        self._suppliers: dict[NetworkResource, ResourcesPool] = {}
-        self._consumers: dict[NetworkResource, ResourcesPool]  = {}
+        self._networks: dict[NetworkResource, ResourcesPool] = {}
 
     def get_total_mass(self) -> float:
         return sum(item.weight * qty for item, qty in self._contents.items())
@@ -35,24 +34,18 @@ class Storage:
 
     def from_dict(self, data: dict):
         self._contents = {}
-        for type_name, qty in data.get('contents', {}).items():
+        for type_name, qty in data.items():
             item_type = MAP.get(type_name, None)
             if item_type:
                 self._contents[item_type] = qty
         
-    def to_dict(self) -> dict[str, dict]:
-        return {
-            'contents': self.get_contents(),
-        }
+    def to_dict(self) -> dict[str, int]:
+        return self.get_contents()
 
-    def get_suppliers(self, resource: NetworkResource) -> ResourcesPool:
-        if resource not in self._suppliers:
-            self._suppliers[resource] = ResourcesPool()
+    def get_net(self, resource: NetworkResource) -> ResourcesPool:
+        if resource not in self._networks:
+            self._networks[resource] = ResourcesPool()
 
-        return self._suppliers[resource]
+        return self._networks[resource]
 
-    def get_consumers(self, resource: NetworkResource) -> ResourcesPool:
-        if resource not in self._consumers:
-            self._consumers[resource] = ResourcesPool()
-
-        return self._consumers[resource]
+    

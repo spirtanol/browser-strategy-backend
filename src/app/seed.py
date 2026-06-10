@@ -1,37 +1,68 @@
 import asyncio
 
 from app.bootstrap.container import get_context_container
-from app.services.ship import ShipService, ShipEntity
-from app.defs.items import MEAL, FUEL_BARREL
-from app.entities.modules.factory import module_factory, ModuleDefs
+from app.services.user.action import UserService
+from app.services.ship.action import ShipService
+from app.services.platform.action import PlatformService
+from app.entities.ship import ShipEntity
+from app.entities.platform import PlatformEntity
+from app.defs import modules as ModuleDefs, items as ItemDefs
+from app.entities.modules import factory as ModuleFactory
+from app.schemas.user import CreateUserSchema, CreateNpcSchema
 from app.core.disposer import dispose
 
 
-async def seed_world(ship_service: ShipService):
+async def seed_world(user_service: UserService, ship_service: ShipService, platform_service: PlatformService):
+    # Создаем npc
+    create_npc_dto = CreateNpcSchema(name='NPC')
+
+    npc_user = await user_service.create_npc(create_npc_dto)
+
+    # Создаем платформу
+    platform = PlatformEntity()
+    platform.name = 'The Platform'
+    platform.owner_id = npc_user.id
+    platform.x = 10.0
+    platform.y = 10.0
+    await platform_service.save(platform)
+
+    # Создаем пользователя
+    create_user_dto = CreateUserSchema(
+        name='spirt',
+        email='spirt@test.com',
+        password='12qwaszx',
+        is_npc=False
+    )
+
+    user = await user_service.create(create_user_dto)
+    user.money = 1000
+    await user_service.save(user)
+
     ship = ShipEntity()
-    ship.name = 'Nostromo'
+    ship.owner_id = user.id
+    ship.name = 'Blue Shrimp'
 
     # Создаем модули корабля
-    for i in range(10):
-        ship.add_module(module_factory(ModuleDefs.HULL.name))
-    ship.add_module(module_factory(ModuleDefs.GENERATOR.name))
+    ship.hull.hp = 1000
+    ship.hull.weight = 3000
+    ship.hull.floatage = 6000
+    
+    ship.add_module(ModuleFactory.create(ModuleDefs.GENERATOR.name, ship, ship.get_counter(), active=True))
+    ship.add_module(ModuleFactory.create(ModuleDefs.ENGINE.name, ship, ship.get_counter(), active=True))
     
     ship.crew = 10
-    ship.storage.push(MEAL, 100)
-    ship.storage.push(FUEL_BARREL, 10)
+    ship.storage.push(ItemDefs.MEAL, 100)
+    ship.storage.push(ItemDefs.FUEL_BARREL, 10)
 
-    await ship_service.add(ship)
+    await ship_service.save(ship)
 
 
 if __name__ == "__main__":
     async def _run():
         try:
             async with get_context_container() as container:
-                if await container.ship_service.is_empty():
-                    await seed_world(container.ship_service)
-                    print('Корабль создан')
-                else:
-                    print('Корабль уже существует')
+                async with container.transaction():
+                    await seed_world(container.user_service, container.ship_service, container.platform_service)
         finally:
             await dispose()
     asyncio.run(_run())

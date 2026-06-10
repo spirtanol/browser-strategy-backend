@@ -1,25 +1,14 @@
-from .ship import ShipService
-from .lifestate.registry import LifeStateRegistry
+import inspect
+
 from app.schemas.commands import GameCommand
+from app.entities.world import World
+from .commands.factory import get_command
 
 
 class CommandHandlerService:
-    def __init__(self, ship_service: ShipService, life_state_registry: LifeStateRegistry):
-        self.ship_service = ship_service
-        self._life_state_registry = life_state_registry
-
-    async def handle(self, command: GameCommand):
-        match command.action:
-            case 'feed':
-                ship = await self.ship_service.find(command.params.get('ship_id', 0))
-                if ship:
-                    amount = command.params.get('amount', 0)
-                    if amount > 0:
-                        from app.defs.items import MEAL
-                        ship.storage.push(MEAL, 10)
-            case 'alive_ship':
-                ship = await self.ship_service.find(command.params.get('ship_id', 0))
-                if ship:
-                    self._life_state_registry.add_ship(ship.id)
-            case _:
-                pass
+    async def handle(self, command: GameCommand, world: World):
+        command_handler, dto_class = get_command(command.action)
+        handler_params = dto_class.model_validate(command.params)
+        result = command_handler(world, handler_params)
+        if inspect.isawaitable(result):
+            await result

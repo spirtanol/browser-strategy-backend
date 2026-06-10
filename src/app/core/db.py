@@ -13,6 +13,7 @@ from redis.asyncio import Redis
 
 from .disposer import reg_to_dispose
 
+
 @lru_cache(maxsize=None)
 def get_engine(db_url: str, debug: bool) -> AsyncEngine:
     engine = create_async_engine(

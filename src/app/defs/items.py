@@ -20,7 +20,8 @@ MAP = {
 }
 
 class NetworkResource(enum.StrEnum):
-    Power = 'pow'
+    PowerIn = 'pow_i' # Потребление
+    PowerOut = 'pow_o' # Генерация
     Thrust = 'thr'
     Weight = 'wght'
     HP = 'hp'

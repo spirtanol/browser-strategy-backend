@@ -12,12 +12,14 @@ class ModuleDef:
 class GeneratorModuleDef(ModuleDef):
     output: float
 
-HULL = ModuleDef('hull', 500, 800, 100)
-ENGINE = ModuleDef('engine', 750, 0, 100)
+@dataclass
+class EngineModuleDef(ModuleDef):
+    thrust: float
+
+ENGINE = EngineModuleDef('engine', 750, 0, 100, 3500)
 GENERATOR = GeneratorModuleDef('generator', 750, 0, 100, 100)
 
 MAP = {
-    HULL.name: HULL,
     ENGINE.name: ENGINE,
     GENERATOR.name: GENERATOR
 }

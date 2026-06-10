@@ -5,43 +5,40 @@ import sqlalchemy as sa
 from app.entities.ship import ShipEntity
 from app.core.db import AsyncSession
 from app.models.ship import ShipModel
+from app.mappers.ship import ShipMapper
 
 
 class ShipRepository:
-    def __init__(self, session_factory: Callable[[], AsyncSession]):
+    def __init__(self, session_factory: Callable[[], AsyncSession], mapper: ShipMapper):
         self.session_factory = session_factory
+        self._mapper = mapper
 
     async def get_all(self) -> list[ShipEntity]:
         session = self.session_factory()
         stmt = sa.Select(ShipModel).order_by(ShipModel.id)
         result = await session.execute(stmt)
         models = result.scalars().all()
-        return [self._to_entity(m) for m in models]
+        return [self._mapper.from_model(m) for m in models]
 
     async def find(self, id: int) -> Optional[ShipEntity]:
         session = self.session_factory()
         model = await session.get(ShipModel, id)
         
         if model:
-            return self._to_entity(model)
+            return self._mapper.from_model(model)
         return None
 
     async def save(self, entities: list[ShipEntity]):
         session = self.session_factory()
         data = [
-            {
-                "id": entity.id,
-                "name": entity.name,
-                "state": entity.dump_state()
-            }
+            self._mapper.to_model_data(entity)
             for entity in entities if entity.id != 0
         ]
         
         new_entities = [e for e in entities if e.id == 0]
         for new_e in new_entities:
             model = ShipModel(
-                name=new_e.name,
-                state=new_e.dump_state()
+                **self._mapper.to_model_data(new_e)
             )
             session.add(model)
             await session.flush()
@@ -50,14 +47,6 @@ class ShipRepository:
         if data:
             await session.execute(sa.update(ShipModel), data)
             await session.flush()
-
-    def _to_entity(self, model: ShipModel) -> ShipEntity:
-        entity = ShipEntity(
-            id=model.id,
-            name=model.name
-        )
-        entity.load_state(model.state)
-        return entity
 
     async def is_empty(self) -> bool:
         session = self.session_factory()

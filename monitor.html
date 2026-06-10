@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Ship Debug Control</title>
+        <style>
+            body { font-family: monospace; background: #1e1e1e; color: #d4d4d4; display: flex; flex-direction: column; gap: 20px; padding: 20px; }
+            .auth-panel { background: #252526; padding: 15px; border-radius: 5px; border: 1px solid #333; display: flex; gap: 10px; align-items: center; }
+            .auth-panel input { flex-grow: 1; background: #1e1e1e; color: #fff; border: 1px solid #555; padding: 8px; border-radius: 3px; font-family: monospace; }
+            .main-content { display: flex; gap: 20px; flex-grow: 1; }
+            .column { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+            
+            /* Стили для мониторов */
+            .monitor { background: #252526; padding: 15px; border-radius: 5px; border: 1px solid #333; white-space: pre-wrap; margin: 0; flex-grow: 1; min-height: 150px; }
+            
+            /* Стили для управления (правая часть) */
+            textarea { background: #252526; color: #ce9178; border: 1px solid #333; padding: 10px; border-radius: 5px; resize: vertical; min-height: 200px; font-family: monospace; }
+            button { background: #0e639c; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+            button:hover { background: #1177bb; }
+            button:disabled { background: #555; cursor: not-allowed; }
+            .status { font-size: 0.8em; color: #888; }
+        </style>
+    </head>
+    <body>
+        <!-- Панель авторизации -->
+        <div class="auth-panel">
+            <strong>Access Token:</strong>
+            <input type="text" id="tokenInput" placeholder="Вставьте ваш JWT токен сюда...">
+            <button id="connectBtn">Подключиться</button>
+        </div>
+
+        <div class="main-content">
+            <!-- Левая колонка с мониторами состояния -->
+            <div class="column">
+                <strong>Live State (Ship ID: 1):</strong>
+                <pre id="display" class="monitor">Waiting for connection and token...</pre>
+
+                <strong>User State:</strong>
+                <pre id="userDisplay" class="monitor">Waiting for user data...</pre>
+            </div>
+
+            <!-- Правая колонка управления -->
+            <div class="column">
+                <strong>Send Command (JSON):</strong>
+                <textarea id="cmdInput"></textarea>
+                <button id="sendBtn" disabled>Отправить команду</button>
+                <div id="log" class="status">Ожидание авторизации</div>
+            </div>
+        </div>
+
+        <script>
+            const shipId = 1; 
+            let ws = null;
+
+            const tokenInput = document.getElementById('tokenInput');
+            const connectBtn = document.getElementById('connectBtn');
+            const display = document.getElementById('display');
+            const userDisplay = document.getElementById('userDisplay');
+            const cmdInput = document.getElementById('cmdInput');
+            const sendBtn = document.getElementById('sendBtn');
+            const log = document.getElementById('log');
+
+            cmdInput.value = `{"action": "act_name", "params": {"ship_id": ${shipId}}}`;
+
+            // Функция инициализации сокета
+            function connectWebSocket(token) {
+                if (ws) {
+                    ws.close();
+                }
+
+                const wsUrl = `ws://localhost:4000/ws/${shipId}?token=${encodeURIComponent(token)}`;
+                ws = new WebSocket(wsUrl);
+
+                // Прием данных
+                ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        
+                        // Проверяем верхний уровень
+                        if (data.out_type === 'entity') {
+                            // Маршрутизация по entity_type
+                            if (data.entity_type === 'ship') {
+                                display.textContent = JSON.stringify(data, null, 2);
+                            } else if (data.entity_type === 'user') {
+                                userDisplay.textContent = JSON.stringify(data, null, 2);
+                            }
+                        }
+                    } catch (e) {
+                        console.error("Ошибка парсинга входящего сообщения", e);
+                    }
+                };
+
+                ws.onopen = () => {
+                    log.textContent = "Соединение установлено и авторизовано";
+                    log.style.color = "#888";
+                    sendBtn.disabled = false;
+                };
+
+                ws.onclose = (event) => {
+                    log.textContent = `Соединение закрыто (Код: ${event.code})`;
+                    sendBtn.disabled = true;
+                    if (event.code === 4001) {
+                        log.textContent = "Ошибка: Неверный или просроченный токен";
+                        log.style.color = "#f44336";
+                    }
+                };
+
+                ws.onerror = (e) => {
+                    log.textContent = "Ошибка WebSocket соединения";
+                    log.style.color = "#f44336";
+                    sendBtn.disabled = true;
+                };
+            }
+
+            // Логика кнопки подключения
+            connectBtn.onclick = () => {
+                const token = tokenInput.value.trim();
+                if (!token) {
+                    alert("Пожалуйста, введите токен!");
+                    return;
+                }
+                log.textContent = "Установка соединения...";
+                connectWebSocket(token);
+            };
+
+            // Отправка команды
+            sendBtn.onclick = () => {
+                if (!ws || ws.readyState !== WebSocket.OPEN) {
+                    log.textContent = "Ошибка: Нет соединения с сервером";
+                    return;
+                }
+
+                let rawValue = cmdInput.value;
+                rawValue = rawValue.replace(/\/\/.*|\/\*[\s\S]*?\*\//g, "");
+                try {
+                    JSON.parse(rawValue); 
+                    ws.send(rawValue);
+                    log.textContent = `[${new Date().toLocaleTimeString()}] Отправлено!`;
+                    log.style.color = "#888";
+                } catch (e) {
+                    log.textContent = `Ошибка: Невалидный JSON`;
+                    log.style.color = "#f44336";
+                }
+            };
+        </script>
+    </body>
+</html>
