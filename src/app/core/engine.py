@@ -1,6 +1,7 @@
 import asyncio
 import time
 from typing import Callable, AsyncContextManager
+import traceback
 
 from app.services.ship.core import CoreShipService
 from app.services.user.core import CoreUserService
@@ -90,8 +91,10 @@ class Engine(World):
                 await asyncio.sleep(sleep_time)
 
         except (KeyboardInterrupt, asyncio.CancelledError):
+            traceback.print_exc()
             print("\nСимуляция остановлена пользователем.")
         except Exception as e:
+            traceback.print_exc()
             print('\nВсе пропало', str(e))
         finally:
             self.is_running = False

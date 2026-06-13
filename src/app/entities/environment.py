@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 
 from app.defs.items import StorageItemType, NetworkResource
 from .resources_pool import ResourcesPool
+from app.core.types import MovingState
 
 
 class Environment(ABC):
@@ -19,4 +20,4 @@ class Environment(ABC):
 
 class MovableEnvironment(Environment):
     @abstractmethod
-    def is_moving(self) -> bool: ...
+    def get_moving_state(self) -> MovingState: ...

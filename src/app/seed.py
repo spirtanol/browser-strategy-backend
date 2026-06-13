@@ -22,8 +22,8 @@ async def seed_world(user_service: UserService, ship_service: ShipService, platf
     platform = PlatformEntity()
     platform.name = 'The Platform'
     platform.owner_id = npc_user.id
-    platform.x = 10.0
-    platform.y = 10.0
+    platform.x = 2.0
+    platform.y = 1.0
     await platform_service.save(platform)
 
     # Создаем пользователя

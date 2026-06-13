@@ -21,7 +21,7 @@ The project uses a **decoupled architecture** where a single codebase can be lau
 
 ## Tech Stack
 
-* **Language:** Python 3.11+ (Asyncio)
+* **Language:** Python 3.13+ (Asyncio)
 * **Framework:** FastAPI
 * **Real-time Networking:** WebSockets
 * **Message Broker & Cache:** Redis (Pub/Sub, Key-Value)

@@ -1,5 +1,6 @@
-from typing import override
+from typing import override, Optional
 import math
+import enum
 
 from .storage import Storage, StorageItemType
 from .environment import MovableEnvironment, ResourcesPool, NetworkResource
@@ -10,10 +11,13 @@ from app.utils.str_helpers import generate_random_string
 from .commands.command_queue import CommandQueue
 from .world import World
 from app.utils import xy
+from app.core.types import MovingState, ObjectType
+from .anchor_point import AnchorPoint
 
 
 HUNGER_CYCLE: float = 60 * 60 * 8
 ENVIRONMENT_SPEED_FACTOR = 1.0 - 0.2
+
 
 class Position:
     def __init__(self, x: float = 0.0, y: float = 0.0):
@@ -67,14 +71,15 @@ class ShipEntity(MovableEnvironment):
         self.hull = Hull()
         self.pos = Position()
         self.command_queue = CommandQueue(self)
-        self.onmove: bool = False
+        self.state: MovingState = MovingState.Idle
+        self.attached_to_id: Optional[int] = None
+        self.attached_to_type: Optional[ObjectType] = None
 
     def get_counter(self) -> int:
         self.counter += 1
         return self.counter
 
     def update(self, dt: float, world: World):
-        self.onmove = False
         self.command_queue.update(dt, world)        
         self._crew_update(dt)
         self._modules_update(dt)
@@ -136,10 +141,23 @@ class ShipEntity(MovableEnvironment):
         return self.get_net(NetworkResource.Floatage).value + self.hull.floatage
 
     @override
-    def is_moving(self) -> bool:
-        return self.onmove
+    def get_moving_state(self) -> MovingState:
+        return self.state
 
     @property
     def max_speed(self) -> float:
         thrust = self.get_net(NetworkResource.Thrust).value
         return thrust / self.weight * ENVIRONMENT_SPEED_FACTOR
+
+    def attach_to(self, anchor_point: AnchorPoint) -> None:
+        self.attached_to_id = anchor_point.get_id()
+        self.attached_to_type = anchor_point.get_type()
+        anchor_point.attach_ship(self.id)
+
+    def detach(self, anchor_point: AnchorPoint) -> None:
+        if self.attached_to_id is None:
+            return
+        
+        self.attached_to_id = None
+        self.attached_to_type = None
+        anchor_point.detach_ship(self.id)

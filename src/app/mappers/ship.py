@@ -1,4 +1,4 @@
-from app.entities.ship import ShipEntity
+from app.entities.ship import ShipEntity, MovingState, ObjectType
 from app.entities.modules import factory as ModuleFactory
 from app.models.ship import ShipModel
 
@@ -13,7 +13,10 @@ class ShipMapper:
             'modules': [{'def': m.module_def.name, 'data': m.to_dict()} for m in entity.modules],
             'hull': entity.hull.to_dict(),
             'xy': [entity.pos.x, entity.pos.y],
-            'commands': entity.command_queue.to_dict()
+            'commands': entity.command_queue.to_dict(),
+            'state': entity.state,
+            'attached_to_id': entity.attached_to_id,
+            'attached_to_type': entity.attached_to_type
         }
 
     def _load_state(self, entity: ShipEntity, data: dict[str, any]):
@@ -23,6 +26,13 @@ class ShipMapper:
         entity.storage.from_dict(data.get('storage', {}))
         entity.pos.x, entity.pos.y = data.get('xy', [0.0, 0.0])
         entity.hull.from_dict(data.get('hull', {}))
+        entity.state = MovingState(data.get('state', MovingState.Idle))
+        entity.attached_to_id = data.get('attached_to_id', None)
+        obj_t = data.get('attached_to_type', None)
+        if obj_t:
+            entity.attached_to_type = ObjectType(obj_t)
+        else:
+            entity.attached_to_type = None
         entity.modules = []
 
         # Грузим модули

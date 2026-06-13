@@ -2,8 +2,10 @@ from .handlers.move_to import MoveToCommandParams, move_to_command
 from .handlers.cancel import CancelCommandParams, cancel_command
 from .handlers.feed import FeedCommandParams, feed_command
 from .handlers.move_to_object import move_to_object_command, MoveToObjectCommandParams
+from .handlers.dock_to_platform import dock_to_platform_command, DockToPlatformCommandParams
 from .resolvers.ship import ship_command_resolver
 from .resolvers.move_to_object_resolver import move_to_object_resolver
+from .resolvers.dock_to_platform_resolver import dock_to_platform_resolver
 
 
 COMMAND_CONFIG = {
@@ -26,5 +28,10 @@ COMMAND_CONFIG = {
         'dto': MoveToObjectCommandParams,
         'resolver': move_to_object_resolver,
         'handler': move_to_object_command
+    },
+    'dock': {
+        'dto': DockToPlatformCommandParams,
+        'resolver': dock_to_platform_resolver,
+        'handler': dock_to_platform_command
     }
 }

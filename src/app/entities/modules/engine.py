@@ -3,6 +3,7 @@ from app.entities.environment import MovableEnvironment, Environment
 from app.defs.modules import EngineModuleDef, ENGINE
 from app.defs.items import FUEL_BARREL, EMPTY_BARREL, NetworkResource
 from .factory import register_module
+from app.core.types import MovingState
 
 
 CYCLE_DURATION = 4.0 * 60.0 * 60.0
@@ -20,6 +21,7 @@ class EngineModule(BaseModule):
         super().__init__(module_def, env, id)
         self.fuel: float = 0.0
         self.active: bool = active
+        self.menv = env
 
     def to_dict(self) -> dict[str, any]:
         data = super().to_dict()
@@ -38,8 +40,13 @@ class EngineModule(BaseModule):
                 thrust = self.module_def.thrust
                 self.env.get_net(NetworkResource.Thrust).add(self.id, thrust)
             elif phase == UpdatePhase.Execution:
-                if self.env.is_moving():
+                consumption = 0
+                if self.menv.get_moving_state() == MovingState.Move:
                     consumption = min(dt / CYCLE_DURATION, 1.0)
+                elif self.menv.get_moving_state() == MovingState.Maneuvering:
+                    consumption = min(dt / CYCLE_DURATION, 1.0) * 0.5
+                    
+                if consumption > 0:
                     if self.fuel <= consumption:
                         if self.env.pull(FUEL_BARREL, 1):
                             self.env.push(EMPTY_BARREL, 1)

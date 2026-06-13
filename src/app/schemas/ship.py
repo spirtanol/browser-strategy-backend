@@ -1,7 +1,7 @@
 from typing import Optional, Literal
 from pydantic import BaseModel
 
-from app.entities.ship import ShipEntity, NetworkResource
+from app.entities.ship import ShipEntity, NetworkResource, MovingState, ObjectType
 from app.entities.commands.base import BaseCommand
 from .common import EntityState
 
@@ -12,7 +12,7 @@ class Position(BaseModel):
 
 class ShipCommandOut(BaseModel):
     name: str
-    state: dict[str, str | int | float | list[float | int | str]]
+    state: dict[str, str | int | float | list[float | int | str] | None | MovingState | ObjectType, dict]
 
     @classmethod
     def from_entity(cls, command: BaseCommand):
@@ -36,6 +36,9 @@ class ShipStateOut(EntityState):
     position: Position
     max_speed: float
     command: Optional[ShipCommandOut] = None
+    state: MovingState
+    attached_to_id: Optional[int]
+    attached_to_type: Optional[ObjectType]
 
     @classmethod
     def from_entity(cls, ship: ShipEntity) -> 'ShipStateOut':
@@ -53,5 +56,8 @@ class ShipStateOut(EntityState):
             power=(ship.get_net(NetworkResource.PowerIn).value, ship.get_net(NetworkResource.PowerOut).value),
             position=Position(x=ship.pos.x, y=ship.pos.y),
             max_speed=ship.max_speed,
-            command=ShipCommandOut.from_entity(current_command) if current_command else None
+            command=ShipCommandOut.from_entity(current_command) if current_command else None,
+            state=ship.get_moving_state(),
+            attached_to_id=ship.attached_to_id,
+            attached_to_type=ship.attached_to_type
         )

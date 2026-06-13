@@ -9,12 +9,14 @@ class PlatformMapper:
             'c': entity.counter,
             'storage': entity.storage.to_dict(),
             'modules': [{'def': m.module_def.name, 'data': m.to_dict()} for m in entity.modules],
+            'attached_ships': list(entity.attached_ships)
             #'hull': entity.hull.to_dict()
         }
 
     def _load_state(self, entity: PlatformEntity, data: dict[str, any]):
         entity.counter = data.get('c', 0)
         entity.storage.from_dict(data.get('storage', {}))
+        entity.attached_ships = set(data.get('attached_ships', []))
         #entity.hull.from_dict(data.get('hull', {}))
         entity.modules = []
 

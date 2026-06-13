@@ -59,7 +59,7 @@ async def _run():
         async def message_loop():
             try:
                 while True:
-                    msg = await subscriber.get_message(ignore_subscribe_messages=True, timeout=1.0)
+                    await subscriber.get_message(ignore_subscribe_messages=True, timeout=1.0)
             except asyncio.CancelledError:
                 pass
 

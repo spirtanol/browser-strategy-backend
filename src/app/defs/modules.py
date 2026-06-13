@@ -16,7 +16,7 @@ class GeneratorModuleDef(ModuleDef):
 class EngineModuleDef(ModuleDef):
     thrust: float
 
-ENGINE = EngineModuleDef('engine', 750, 0, 100, 3500)
+ENGINE = EngineModuleDef('engine', 750, 0, 100, 6000)
 GENERATOR = GeneratorModuleDef('generator', 750, 0, 100, 100)
 
 MAP = {

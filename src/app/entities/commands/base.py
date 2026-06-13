@@ -19,3 +19,6 @@ class BaseCommand:
 
     def from_dict(self, data: dict[str, any]):
         pass
+
+    def cancel(self, ship: ShipEntity, world: World):
+        pass
