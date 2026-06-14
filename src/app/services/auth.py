@@ -38,7 +38,7 @@ class AuthService:
     async def login_by_creds(self, creds: LoginCredentials) -> AccessSchema:
         user = await self._user_repo.find_model_by_email(creds.email)
 
-        if user is None:
+        if user is None or user.is_npc:
             raise AuthBadCredentials()
 
         if not verify_password(creds.password, user.password_hash):
