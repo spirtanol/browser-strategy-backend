@@ -10,3 +10,7 @@ class MovingState(enum.IntEnum):
     Move = 2
     Docked = 3
     Maneuvering = 4
+
+class MarketOrderType(enum.IntEnum):
+    Buy = 1
+    Sell = 2

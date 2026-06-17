@@ -4,15 +4,22 @@ from app.bootstrap.container import get_context_container
 from app.services.user.action import UserService
 from app.services.ship.action import ShipService
 from app.services.platform.action import PlatformService
+from app.services.market import MarketService, CreateMarketOrderSchema
 from app.entities.ship import ShipEntity
 from app.entities.platform import PlatformEntity
 from app.defs import modules as ModuleDefs, items as ItemDefs
 from app.entities.modules import factory as ModuleFactory
 from app.schemas.user import CreateUserSchema, CreateNpcSchema
 from app.core.disposer import dispose
+from app.core.types import MarketOrderType
 
 
-async def seed_world(user_service: UserService, ship_service: ShipService, platform_service: PlatformService):
+async def seed_world(
+    user_service: UserService, 
+    ship_service: ShipService, 
+    platform_service: PlatformService,
+    market_servcie: MarketService
+):
     # Создаем npc
     create_npc_dto = CreateNpcSchema(name='NPC')
 
@@ -56,13 +63,42 @@ async def seed_world(user_service: UserService, ship_service: ShipService, platf
 
     await ship_service.save(ship)
 
+    await market_servcie.create(CreateMarketOrderSchema(
+        owner_id=npc_user.id,
+        platform_id=platform.id,
+        order_type=MarketOrderType.Sell,
+        price=10,
+        quantity=1000,
+        item_name=ItemDefs.MEAL.name
+    ))
+    await market_servcie.create(CreateMarketOrderSchema(
+        owner_id=npc_user.id,
+        platform_id=platform.id,
+        order_type=MarketOrderType.Sell,
+        price=20,
+        quantity=1000,
+        item_name=ItemDefs.FUEL_BARREL.name
+    ))
+    await market_servcie.create(CreateMarketOrderSchema(
+        owner_id=npc_user.id,
+        platform_id=platform.id,
+        order_type=MarketOrderType.Buy,
+        price=20,
+        quantity=1000,
+        item_name=ItemDefs.EMPTY_BARREL.name
+    ))
 
 if __name__ == "__main__":
     async def _run():
         try:
             async with get_context_container() as container:
                 async with container.transaction():
-                    await seed_world(container.user_service, container.ship_service, container.platform_service)
+                    await seed_world(
+                        container.user_service, 
+                        container.ship_service, 
+                        container.platform_service,
+                        container.market_service
+                    )
         finally:
             await dispose()
     asyncio.run(_run())

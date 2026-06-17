@@ -3,9 +3,11 @@ from .handlers.cancel import CancelCommandParams, cancel_command
 from .handlers.feed import FeedCommandParams, feed_command
 from .handlers.move_to_object import move_to_object_command, MoveToObjectCommandParams
 from .handlers.dock_to_platform import dock_to_platform_command, DockToPlatformCommandParams
+from .handlers.trade import TradeCommandParams, trade_command
 from .resolvers.ship import ship_command_resolver
 from .resolvers.move_to_object_resolver import move_to_object_resolver
 from .resolvers.dock_to_platform_resolver import dock_to_platform_resolver
+from .resolvers.trade_resolver import trade_resolver
 
 
 COMMAND_CONFIG = {
@@ -33,5 +35,10 @@ COMMAND_CONFIG = {
         'dto': DockToPlatformCommandParams,
         'resolver': dock_to_platform_resolver,
         'handler': dock_to_platform_command
+    },
+    'trade': {
+        'dto': TradeCommandParams,
+        'resolver': trade_resolver,
+        'handler': trade_command
     }
 }

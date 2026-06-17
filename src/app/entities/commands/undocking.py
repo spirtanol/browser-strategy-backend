@@ -20,14 +20,17 @@ class UndockingCommand(BaseCommand):
         self.progress: float = 0.0
 
     def update(self, ship: ShipEntity, dt: float, world: World):
+        if self.finished:
+            return
+
         if ship.state != MovingState.Docked and ship.state != MovingState.Maneuvering:
             self.finished = True
             return
         
         ship.state = MovingState.Maneuvering
-        self.progress += dt
+        self.progress += (dt / (Consts.DockingTime * 0.5))
 
-        if self.progress >= Consts.DockingTime * 0.5:
+        if self.progress >= 1.0:
             ship.state = MovingState.Idle
             if ship.attached_to_type == ObjectType.Platform:
                 platform = world.find_platform(ship.attached_to_id)

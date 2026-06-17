@@ -1,5 +1,3 @@
-from pydantic import BaseModel
-
 from .base import ShipCommand
 from app.entities.world import World
 from app.entities.commands.docking import DockingCommand

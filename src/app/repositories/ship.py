@@ -10,18 +10,18 @@ from app.mappers.ship import ShipMapper
 
 class ShipRepository:
     def __init__(self, session_factory: Callable[[], AsyncSession], mapper: ShipMapper):
-        self.session_factory = session_factory
+        self._session_factory = session_factory
         self._mapper = mapper
 
     async def get_all(self) -> list[ShipEntity]:
-        session = self.session_factory()
+        session = self._session_factory()
         stmt = sa.Select(ShipModel).order_by(ShipModel.id)
         result = await session.execute(stmt)
         models = result.scalars().all()
         return [self._mapper.from_model(m) for m in models]
 
     async def find(self, id: int) -> Optional[ShipEntity]:
-        session = self.session_factory()
+        session = self._session_factory()
         model = await session.get(ShipModel, id)
         
         if model:
@@ -29,7 +29,7 @@ class ShipRepository:
         return None
 
     async def save(self, entities: list[ShipEntity]):
-        session = self.session_factory()
+        session = self._session_factory()
         data = [
             self._mapper.to_model_data(entity)
             for entity in entities if entity.id != 0
@@ -49,6 +49,6 @@ class ShipRepository:
             await session.flush()
 
     async def is_empty(self) -> bool:
-        session = self.session_factory()
+        session = self._session_factory()
         q = sa.Select(sa.Exists(ShipModel))
         return not bool(await session.scalar(q))

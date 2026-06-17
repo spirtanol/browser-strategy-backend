@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 class BaseCommand:
     def __init__(self):
         self.finished = False
+        self.is_dependend = False
 
     def update(self, ship: ShipEntity, dt: float, world: World):
         pass

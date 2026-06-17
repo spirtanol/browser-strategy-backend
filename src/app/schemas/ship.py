@@ -1,7 +1,8 @@
 from typing import Optional, Literal
 from pydantic import BaseModel
 
-from app.entities.ship import ShipEntity, NetworkResource, MovingState, ObjectType
+from app.core.types import ObjectType, MovingState, MarketOrderType
+from app.entities.ship import ShipEntity, NetworkResource
 from app.entities.commands.base import BaseCommand
 from .common import EntityState
 
@@ -12,7 +13,7 @@ class Position(BaseModel):
 
 class ShipCommandOut(BaseModel):
     name: str
-    state: dict[str, str | int | float | list[float | int | str] | None | MovingState | ObjectType, dict]
+    state: dict[str, str | int | float | list | None | MovingState | ObjectType, dict, MarketOrderType]
 
     @classmethod
     def from_entity(cls, command: BaseCommand):

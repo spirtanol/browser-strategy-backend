@@ -1,13 +1,19 @@
+from __future__ import annotations
 import asyncio
 import time
-from typing import Callable, AsyncContextManager
+from typing import TYPE_CHECKING, AsyncContextManager, Optional
 import traceback
 
 from app.services.ship.core import CoreShipService
 from app.services.user.core import CoreUserService
 from app.services.platform.core import CorePlatformService
-from app.entities.world import World
+from app.entities.world import World, Awaitable
+from app.services.market import MarketService
 
+if TYPE_CHECKING:
+    from .ship import ShipEntity
+    from .platform import PlatformEntity
+    from .user import UserEntity
 
 class Engine(World):
     def __init__(
@@ -17,8 +23,9 @@ class Engine(World):
         ship_service: CoreShipService,
         user_service: CoreUserService,
         platform_service: CorePlatformService,
-        transaction_manager: Callable[[], AsyncContextManager[None]],
-        save_interval: float
+        transaction_manager: callable[[], AsyncContextManager[None]],
+        save_interval: float,
+        market_service: MarketService
     ):
         self.ship_service = ship_service
         self.user_service = user_service
@@ -29,6 +36,8 @@ class Engine(World):
         self.transaction_manager = transaction_manager
         self.running = False
         self.save_interval = save_interval
+        self._async_actions = []
+        self.market_service = market_service
 
     async def _save(self):
         async with self.transaction_manager():
@@ -64,6 +73,11 @@ class Engine(World):
                 ships = self.ship_service.get_all()
                 for ship in ships:
                     ship.update(dt, self)
+                
+                if len(self._async_actions) > 0:
+                    async with self.transaction_manager():
+                        await asyncio.gather(*(asyncio.create_task(act()) for act in self._async_actions))
+                    self._async_actions.clear()
                 
                 users = self.user_service.get_all()
                 for user in users:
@@ -108,8 +122,17 @@ class Engine(World):
     def stop(self):
         self.running = False
 
-    def find_ship(self, id: int) -> "ShipEntity":
+    def find_ship(self, id: int) -> Optional[ShipEntity]:
         return self.ship_service.find(id)
 
-    def find_platform(self, id: int) -> "PlatformEntity":
+    def find_platform(self, id: int) -> Optional[PlatformEntity]:
         return self.platform_service.find(id)
+
+    def find_user(self, id: int) -> Optional[UserEntity]:
+        return self.user_service.find(id)
+
+    def add_async_action(self, action: callable[[], Awaitable[any]]):
+        self._async_actions.append(action)
+    
+    def get_market_service(self) -> MarketService:
+        return self.market_service

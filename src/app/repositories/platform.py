@@ -10,18 +10,18 @@ from app.mappers.platform import PlatformMapper
 
 class PlatformRepository:
     def __init__(self, session_factory: Callable[[], AsyncSession], mapper: PlatformMapper):
-        self.session_factory = session_factory
+        self._session_factory = session_factory
         self._mapper = mapper
 
     async def get_all(self) -> list[PlatformEntity]:
-        session = self.session_factory()
+        session = self._session_factory()
         stmt = sa.Select(PlatformModel).order_by(PlatformModel.id)
         result = await session.execute(stmt)
         models = result.scalars().all()
         return [self._mapper.from_model(m) for m in models]
 
     async def find(self, id: int) -> Optional[PlatformEntity]:
-        session = self.session_factory()
+        session = self._session_factory()
         model = await session.get(PlatformModel, id)
         
         if model:
@@ -29,7 +29,7 @@ class PlatformRepository:
         return None
 
     async def save(self, entities: list[PlatformEntity]):
-        session = self.session_factory()
+        session = self._session_factory()
         data = [
             self._mapper.to_model_data(entity)
             for entity in entities if entity.id != 0
@@ -49,11 +49,11 @@ class PlatformRepository:
             await session.flush()
 
     async def is_empty(self) -> bool:
-        session = self.session_factory()
+        session = self._session_factory()
         q = sa.Select(sa.Exists(PlatformModel))
         return not bool(await session.scalar(q))
 
     async def exists(self, id: int) -> bool:
-        session = self.session_factory()
+        session = self._session_factory()
         q = sa.Select(sa.exists(PlatformModel).where(PlatformModel.id == id))
         return bool(await session.scalar(q))

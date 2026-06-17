@@ -21,36 +21,40 @@ class MoveToObjectCommand(BaseCommand):
         super().__init__()
         self.obj_id = obj_id
         self.obj_type = obj_type
-        self.move_command = None
 
-    def _prepare(self, ship: ShipEntity, world: World):
+    def update(self, ship: ShipEntity, dt: float, world: World):
+        if self.finished:
+            return
+
         match self.obj_type:
             case ObjectType.Platform:
                 platform = world.find_platform(self.obj_id)
                 if platform is None:
                     self.finished = True
-                    return                
-            
-                x, y = xy.point_at_distance(
-                    platform.x, 
-                    platform.y, 
-                    ship.pos.x, 
-                    ship.pos.y, 
-                    Consts.ObjectRadius * 0.9
-                )
-                self.move_command = MoveCommand(x, y)
-            case ObjectType.Site:
+                    return
+
+                distance = xy.distance(ship.pos.x, ship.pos.y, platform.x, platform.y)
+
+                if distance < Consts.ObjectRadius:
+                    self.finished = True
+                    return
+
+                destX = platform.x
+                destY = platform.y
+            case _:
                 self.finished = True
                 return
 
-    def update(self, ship: ShipEntity, dt: float, world: World):
-        if self.move_command is None:
-            self._prepare(ship, world)
-            if self.finished:
-                return
-        
-        self.move_command.update(ship, dt, world)
-        self.finished = self.move_command.finished
+        x, y = xy.point_at_distance(
+            destX, 
+            destY, 
+            ship.pos.x, 
+            ship.pos.y, 
+            Consts.ObjectRadius * 0.9
+        )
+        move_command = MoveCommand(x, y)
+        move_command.is_dependend = True
+        ship.command_queue.add(move_command, True)
 
     def to_dict(self) -> dict[str, any]:
         data = super().to_dict()

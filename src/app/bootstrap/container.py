@@ -24,12 +24,25 @@ from app.mappers.platform import PlatformMapper
 from app.services.user.action import UserService, UserRepository
 from app.services.user.core import CoreUserService
 from app.services.user.client import ClientUserService
+from app.services.market import MarketService, MarketOrderRepository
 
 
 class Container:
     def __init__(self, config: AppSettings):
         self.config = config
         self._session_var: ContextVar[AsyncSession | None] = ContextVar("session", default=None) 
+
+    @cached_property
+    def market_order_repository(self) -> MarketOrderRepository:
+        return MarketOrderRepository(
+            session_factory=self.get_session
+        )
+
+    @cached_property
+    def market_service(self) -> MarketService:
+        return MarketService(
+            market_order_repo=self.market_order_repository
+        )
 
     @cached_property
     def token_service(self) -> TokenService:

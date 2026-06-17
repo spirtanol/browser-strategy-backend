@@ -15,7 +15,7 @@ class CommandDispatcherService:
         resolver_context: ResolverContext,
         channel_name: str = 'commands',
     ):
-        self.redis_factory = redis_factory
+        self._redis_factory = redis_factory
         self.channel_name = channel_name
         self._resolver_context = resolver_context
 
@@ -28,9 +28,11 @@ class CommandDispatcherService:
             result = await result
         
         if result.success:
-            redis_client = self.redis_factory()
+            redis_client = self._redis_factory()
 
             await redis_client.publish(
                 self.channel_name,
                 command.model_dump_json()
             )
+        else:
+            print(result.message)

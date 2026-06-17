@@ -1,6 +1,7 @@
 from typing import Optional, Callable
 import asyncio
 import json
+import traceback
 
 from redis.asyncio import Redis
 
@@ -52,6 +53,7 @@ class ClientShipService:
                         await self._state_pusher.keep_alive_ship(id)
                         last_keep_alive = now
         except Exception as e:
+            traceback.print_exc()
             print(str(e))
         finally:
             _alive_ships[id] -= 1

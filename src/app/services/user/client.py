@@ -1,6 +1,7 @@
 import asyncio
 from typing import Callable, Optional
 import json
+import traceback
 
 from app.repositories.user import UserRepository, UserEntity
 from app.core.db import Redis
@@ -50,6 +51,7 @@ class ClientUserService:
                         await self._state_pusher.keep_alive_user(id)
                         last_keep_alive = now
         except Exception as e:
+            traceback.print_exc()
             print(str(e))
         finally:
             _alive_users[id] -= 1

@@ -28,7 +28,8 @@ async def _run():
             user_service=container.core_user_service,
             platform_service=container.core_platform_service,
             transaction_manager=container.transaction,
-            save_interval=config.save_interval
+            save_interval=config.save_interval,
+            market_service=container.market_service
         )
 
         async def alive_handler(message):

@@ -1,1 +1,7 @@
-from . import move, move_to_object
+from . import (
+    move, 
+    move_to_object, 
+    docking,
+    trade,
+    undocking
+)
