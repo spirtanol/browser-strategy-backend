@@ -33,10 +33,12 @@ class MoveToObjectCommand(BaseCommand):
                     self.finished = True
                     return
 
-                distance = xy.distance(ship.pos.x, ship.pos.y, platform.x, platform.y)
-
-                if distance < Consts.ObjectRadius:
-                    self.finished = True
+                destX = platform.x
+                destY = platform.y
+            case ObjectType.Site:
+                site = world.find_site(self.obj_id)
+                if site is None:
+                    self.finished
                     return
 
                 destX = platform.x
@@ -44,6 +46,12 @@ class MoveToObjectCommand(BaseCommand):
             case _:
                 self.finished = True
                 return
+
+        distance = xy.distance(ship.pos.x, ship.pos.y, destX, destY)
+
+        if distance < Consts.ObjectRadius:
+            self.finished = True
+            return
 
         x, y = xy.point_at_distance(
             destX, 

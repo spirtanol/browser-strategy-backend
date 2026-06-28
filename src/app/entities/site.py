@@ -45,3 +45,6 @@ class SiteEntity(AnchorPoint):
 
     def get_id(self) -> int:
         return self.id
+
+    def get_anchored(self) -> set[int]:
+        return self.attached_ships

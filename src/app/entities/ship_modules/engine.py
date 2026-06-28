@@ -10,6 +10,7 @@ from app.defs.consts import DayLenght
 
 if TYPE_CHECKING:
     from ..ship import ShipEntity
+    from ..world import World
 
 
 FUEL_WEIGHT = FUEL_BARREL.weight - EMPTY_BARREL.weight
@@ -38,7 +39,7 @@ class EngineModule(BaseShipModule):
         self.fuel = data.get('fuel', 0.0)
         self.active = data.get('active', True)
 
-    def update(self, dt: float, phase: UpdatePhase):
+    def update(self, dt: float, phase: UpdatePhase, world: World):
         if self.ship is None:
             return
 

@@ -95,9 +95,17 @@ async def seed_world(
         owner_id=npc_user.id,
         platform_id=platform.id,
         order_type=MarketOrderType.Buy,
-        price=20,
+        price=5,
         quantity=1000,
         item_name=ItemDefs.EMPTY_BARREL.name
+    ))
+    await market_servcie.create(CreateMarketOrderSchema(
+        owner_id=npc_user.id,
+        platform_id=platform.id,
+        order_type=MarketOrderType.Buy,
+        price=5,
+        quantity=10000,
+        item_name=ItemDefs.Fish.name
     ))
 
 if __name__ == "__main__":

@@ -23,6 +23,7 @@ class HarvesterModuleDef(ModuleDef):
     harvest_power: float
     energy_consumption: float
     resource_type: SiteContent
+    cycle: float
 
 BaseEngine = EngineModuleDef(
     name='engine', 
@@ -46,7 +47,8 @@ FishNet = HarvesterModuleDef(
     hp=200, 
     energy_consumption=30.0,
     harvest_power=10.0,
-    resource_type=SiteContent.Fish
+    resource_type=SiteContent.Fish,
+    cycle=60 * 60
 )
 
 MAP = {
