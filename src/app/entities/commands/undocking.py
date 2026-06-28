@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING
 from .base import BaseCommand
 from .factory import register_command
 from ..world import World
-from app.core.config import Consts
-from app.core.types import MovingState, ObjectType
+import app.defs.consts as Consts
+from app.defs.enums import MovingState, ObjectType
 
 if TYPE_CHECKING:
     from ..ship import ShipEntity
@@ -23,15 +23,15 @@ class UndockingCommand(BaseCommand):
         if self.finished:
             return
 
-        if ship.state != MovingState.Docked and ship.state != MovingState.Maneuvering:
+        if ship.moving_state != MovingState.Docked and ship.moving_state != MovingState.Maneuvering:
             self.finished = True
             return
         
-        ship.state = MovingState.Maneuvering
+        ship.moving_state = MovingState.Maneuvering
         self.progress += (dt / (Consts.DockingTime * 0.5))
 
         if self.progress >= 1.0:
-            ship.state = MovingState.Idle
+            ship.moving_state = MovingState.Idle
             if ship.attached_to_type == ObjectType.Platform:
                 platform = world.find_platform(ship.attached_to_id)
                 ship.detach(platform)

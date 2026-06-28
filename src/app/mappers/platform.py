@@ -1,5 +1,4 @@
 from app.entities.platform import PlatformEntity
-from app.entities.modules import factory as ModuleFactory
 from app.models.platform import PlatformModel
 
 
@@ -8,22 +7,14 @@ class PlatformMapper:
         return {
             'c': entity.counter,
             'storage': entity.storage.to_dict(),
-            'modules': [{'def': m.module_def.name, 'data': m.to_dict()} for m in entity.modules],
             'attached_ships': list(entity.attached_ships)
-            #'hull': entity.hull.to_dict()
         }
 
     def _load_state(self, entity: PlatformEntity, data: dict[str, any]):
         entity.counter = data.get('c', 0)
         entity.storage.from_dict(data.get('storage', {}))
         entity.attached_ships = set(data.get('attached_ships', []))
-        #entity.hull.from_dict(data.get('hull', {}))
         entity.modules = []
-
-        # Грузим модули
-        modules_data = data.get('modules', [])
-        for item in modules_data:
-            entity.add_module(ModuleFactory.load(item['def'], entity, item['data']))
 
     def to_dict(self, entity: PlatformEntity) -> dict[str, any]:
         data = self._dump_state(entity)

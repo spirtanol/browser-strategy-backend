@@ -1,27 +1,31 @@
-from .base import BaseModule, UpdatePhase
-from app.entities.environment import MovableEnvironment, Environment
-from app.defs.modules import EngineModuleDef, ENGINE
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+from .base import BaseShipModule, UpdatePhase
+from app.defs.modules import EngineModuleDef, BaseEngine
 from app.defs.items import FUEL_BARREL, EMPTY_BARREL, NetworkResource
 from .factory import register_module
-from app.core.types import MovingState
+from app.defs.enums import MovingState
+from app.defs.consts import DayLenght
+
+if TYPE_CHECKING:
+    from ..ship import ShipEntity
 
 
-CYCLE_DURATION = 4.0 * 60.0 * 60.0
 FUEL_WEIGHT = FUEL_BARREL.weight - EMPTY_BARREL.weight
 
-@register_module(ENGINE.name)
-class EngineModule(BaseModule):
+@register_module(BaseEngine.name)
+class EngineModule(BaseShipModule):
     def __init__(
         self,  
         module_def: EngineModuleDef,
-        env: MovableEnvironment,
         id: int,
         active: bool = True
     ):
-        super().__init__(module_def, env, id)
+        super().__init__(module_def, id)
+        self.__def = module_def
         self.fuel: float = 0.0
         self.active: bool = active
-        self.menv = env
 
     def to_dict(self) -> dict[str, any]:
         data = super().to_dict()
@@ -35,24 +39,28 @@ class EngineModule(BaseModule):
         self.active = data.get('active', True)
 
     def update(self, dt: float, phase: UpdatePhase):
+        if self.ship is None:
+            return
+
         if self.active:
             if phase == UpdatePhase.Anounce:
                 thrust = self.module_def.thrust
-                self.env.get_net(NetworkResource.Thrust).add(self.id, thrust)
+                self.ship.get_net(NetworkResource.Thrust).add(self.id, thrust)
             elif phase == UpdatePhase.Execution:
+                cdt = dt / DayLenght
                 consumption = 0
-                if self.menv.get_moving_state() == MovingState.Move:
-                    consumption = min(dt / CYCLE_DURATION, 1.0)
-                elif self.menv.get_moving_state() == MovingState.Maneuvering:
-                    consumption = min(dt / CYCLE_DURATION, 1.0) * 0.5
+                if self.ship.moving_state == MovingState.Move:
+                    consumption = cdt * self.__def.fuel_consumption
+                elif self.ship.moving_state in (MovingState.Maneuvering, MovingState.Fishing):
+                    consumption = cdt * self.__def.fuel_consumption * 0.5
                     
                 if consumption > 0:
                     if self.fuel <= consumption:
-                        if self.env.pull(FUEL_BARREL, 1):
-                            self.env.push(EMPTY_BARREL, 1)
+                        if self.ship.pull(FUEL_BARREL, 1):
+                            self.ship.push(EMPTY_BARREL, 1)
                             self.fuel += 1.0
                     self.fuel -= min(consumption, self.fuel)
-                    self.env.get_net(NetworkResource.Weight).add(self.id, self.fuel * FUEL_WEIGHT)
+                    self.ship.get_net(NetworkResource.Weight).add(self.id, self.fuel * FUEL_WEIGHT)
 
-    def onAttached(self, env: Environment):
+    def on_attached(self, ship: ShipEntity):
         self.update(0.0, UpdatePhase.Anounce)

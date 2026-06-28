@@ -5,7 +5,7 @@ from collections import deque
 from .base import BaseCommand
 from .factory import load as load_command
 from ..world import World
-from app.core.types import MovingState
+from app.defs.enums import MovingState
 
 if TYPE_CHECKING:
     from ..ship import ShipEntity

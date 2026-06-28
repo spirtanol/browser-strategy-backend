@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from app.core.types import ObjectType
+from app.defs.enums import ObjectType
 
 
 class AnchorPoint(Protocol):

@@ -1,8 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
-from app.core.config import Consts
-from app.core.types import ObjectType
+import app.defs.consts as Consts
+from app.defs.enums import ObjectType
 from .base import BaseCommand
 from .factory import register_command
 from ..world import World

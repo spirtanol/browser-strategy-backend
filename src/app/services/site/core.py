@@ -1,32 +1,33 @@
 from typing import Optional
 
 from app.core.exceptions import ServiceNotLoadedError
-from app.repositories.platform import PlatformRepository
-from app.entities.platform import PlatformEntity
+from app.repositories.site import SiteRepository
+from app.mappers.site import SiteMapper
+from app.entities.site import SiteEntity
 
 
-class CorePlatformService:
+class CoreSiteService:
     def __init__(
         self,
-        platform_repo: PlatformRepository
+        site_repo: SiteRepository
     ):
-        self.repository = platform_repo
-        self._identity_map: dict[int, PlatformEntity] = None
+        self.repository = site_repo
+        self._identity_map: dict[int, SiteEntity] = None
 
     async def load(self):
         entities = await self.repository.get_all()
         self._identity_map = {ent.id: ent for ent in entities}
 
-    def get_all(self) -> list[PlatformEntity]:
+    def get_all(self) -> list[SiteEntity]:
         return self._identity_map.values()
 
     async def save(self):
         if self._identity_map:
             await self.repository.save(self._identity_map.values())
 
-    def find(self, id: int) -> Optional[PlatformEntity]:
+    def find(self, id: int) -> Optional[SiteEntity]:
         if self._identity_map is None:
-            raise ServiceNotLoadedError('CorePlatformService')
+            raise ServiceNotLoadedError('CoreSiteService')
 
         return self._identity_map.get(id, None)
 

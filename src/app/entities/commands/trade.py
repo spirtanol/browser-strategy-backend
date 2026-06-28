@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, TypedDict, Optional
 from .base import BaseCommand
 from .factory import register_command
 from ..world import World
-from app.core.types import ObjectType, MarketOrderType
+from app.defs.enums import ObjectType, MarketOrderType
 from .docking import DockingCommand
 from app.defs.items import MAP as ItemMap
 

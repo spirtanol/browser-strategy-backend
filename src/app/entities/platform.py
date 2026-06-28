@@ -1,12 +1,12 @@
 from typing import override
 
 from .storage import Storage, StorageItemType
-from .modules.base import BaseModule, UpdatePhase
-from .environment import Environment, ResourcesPool, NetworkResource
+from .resources_pool import ResourcesPool
+from app.defs.items import NetworkResource
 from .anchor_point import AnchorPoint, ObjectType
 
 
-class PlatformEntity(Environment, AnchorPoint):
+class PlatformEntity(AnchorPoint):
     def __init__(self):
         self.id: int = 0
         self.x: float = 0.0
@@ -15,7 +15,6 @@ class PlatformEntity(Environment, AnchorPoint):
         self.owner_id: int = 0
         self.counter: int = 0
         self.storage = Storage()
-        self.modules: list[BaseModule] = []
         self.attached_ships: set[int] = set()
 
     def get_counter(self) -> int:
@@ -40,14 +39,6 @@ class PlatformEntity(Environment, AnchorPoint):
     @override
     def get_net(self, resource: NetworkResource) -> ResourcesPool:
         return self.storage.get_net(resource)
-
-    def add_module(self, module: BaseModule):
-        self.modules.append(module)
-        module.attached(self)
-
-    def remove_module(self, module: BaseModule):
-        self.modules.remove(module)
-        module.detached()
 
     def get_type(self) -> ObjectType:
         return ObjectType.Platform

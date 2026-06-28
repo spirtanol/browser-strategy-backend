@@ -6,9 +6,6 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from dotenv import load_dotenv
 
-class Consts:
-    ObjectRadius: float = 0.3
-    DockingTime: float = 5 * 60
 
 class AppSettings(BaseSettings):
     model_config = SettingsConfigDict(

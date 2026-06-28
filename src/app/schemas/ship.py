@@ -1,7 +1,7 @@
 from typing import Optional, Literal
 from pydantic import BaseModel
 
-from app.core.types import ObjectType, MovingState, MarketOrderType
+from app.defs.enums import ObjectType, MovingState, MarketOrderType
 from app.entities.ship import ShipEntity, NetworkResource
 from app.entities.commands.base import BaseCommand
 from .common import EntityState
@@ -58,7 +58,7 @@ class ShipStateOut(EntityState):
             position=Position(x=ship.pos.x, y=ship.pos.y),
             max_speed=ship.max_speed,
             command=ShipCommandOut.from_entity(current_command) if current_command else None,
-            state=ship.get_moving_state(),
+            state=ship.state,
             attached_to_id=ship.attached_to_id,
             attached_to_type=ship.attached_to_type
         )

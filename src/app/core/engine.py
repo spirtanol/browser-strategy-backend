@@ -7,6 +7,7 @@ import traceback
 from app.services.ship.core import CoreShipService
 from app.services.user.core import CoreUserService
 from app.services.platform.core import CorePlatformService
+from app.services.site.core import CoreSiteService
 from app.entities.world import World, Awaitable
 from app.services.market import MarketService
 
@@ -23,6 +24,7 @@ class Engine(World):
         ship_service: CoreShipService,
         user_service: CoreUserService,
         platform_service: CorePlatformService,
+        site_service: CoreSiteService,
         transaction_manager: callable[[], AsyncContextManager[None]],
         save_interval: float,
         market_service: MarketService
@@ -30,6 +32,7 @@ class Engine(World):
         self.ship_service = ship_service
         self.user_service = user_service
         self.platform_service = platform_service
+        self.site_service = site_service
         self.is_running = False
         self.dt_multiplier = dt_multiplier
         self.tick_duration = float(tick_duration)
@@ -44,6 +47,7 @@ class Engine(World):
             await self.user_service.save()
             await self.ship_service.save()
             await self.platform_service.save()
+            await self.site_service.save()
 
     async def run(self):
         if self.is_running:
@@ -61,6 +65,7 @@ class Engine(World):
             await self.user_service.load()
             await self.ship_service.load()
             await self.platform_service.load()
+            await self.site_service.load()
 
         last_tick_time = time.perf_counter()
         last_save_time = last_tick_time
@@ -86,11 +91,16 @@ class Engine(World):
                 platforms = self.platform_service.get_all()
                 for platform in platforms:
                     platform.update(dt)
+
+                sites = self.site_service.get_all()
+                for site in sites:
+                    site.update(dt)
                     
                 # Можно сбрасывать данные не каждый тик
                 await self.ship_service.flush()
                 await self.user_service.flush()
                 await self.platform_service.flush()
+                await self.site_service.flush()
 
                 last_tick_time = current_time
 
@@ -130,6 +140,9 @@ class Engine(World):
 
     def find_user(self, id: int) -> Optional[UserEntity]:
         return self.user_service.find(id)
+
+    def find_site(self, id: int) -> Optional[SiteEntity]:
+        return self.site_service.find(id)
 
     def add_async_action(self, action: callable[[], Awaitable[any]]):
         self._async_actions.append(action)

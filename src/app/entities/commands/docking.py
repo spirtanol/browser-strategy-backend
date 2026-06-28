@@ -4,10 +4,10 @@ from typing import TYPE_CHECKING, Optional
 from .base import BaseCommand
 from .factory import register_command
 from .move_to_object import MoveToObjectCommand, ObjectType
-from app.core.config import Consts
+import app.defs.consts as Consts
 from ..world import World
 from app.utils import xy
-from app.core.types import MovingState
+from app.defs.enums import MovingState
 
 if TYPE_CHECKING:
     from ..ship import ShipEntity
@@ -60,16 +60,16 @@ class DockingCommand(BaseCommand):
                 else:
                     self.stage = 1
             case 1:
-                if ship.state == MovingState.Docked:
+                if ship.moving_state == MovingState.Docked:
                     self.finished = True
                     platform = self.get_platform(world)
                     ship.attach_to(platform)
                     return
 
-                ship.state = MovingState.Maneuvering
+                ship.moving_state = MovingState.Maneuvering
                 self.docking_progress += (dt / Consts.DockingTime)
                 if self.docking_progress >= 1.0:
-                    ship.state = MovingState.Docked
+                    ship.moving_state = MovingState.Docked
                     platform = self.get_platform(world)
                     ship.attach_to(platform)
                     self.finished = True

@@ -1,6 +1,7 @@
-from typing import Optional, Type
+from __future__ import annotations
+from typing import Optional, Type, TYPE_CHECKING
 
-from .base import BaseModule, Environment
+from .base import BaseShipModule
 import app.defs.modules as ModuleDefs
 
 
@@ -15,20 +16,20 @@ def register_module(def_name: str):
         return cls
     return wrapper
 
-def load(def_name: str, env: Environment, data: dict[str, any]) -> BaseModule:
+def load(def_name: str, data: dict[str, any]) -> BaseShipModule:
     module_def = ModuleDefs.MAP.get(def_name, None)
     module_class = _MAP.get(def_name, None)
 
     if module_def and module_class:
-        return module_class.from_dict(module_def, env, data)
+        return module_class.from_dict(module_def, data)
 
     raise NotFoundModuleError()
 
-def create(def_name: str, env: Environment, id: int, /, **kwargs) -> BaseModule:
+def create(def_name: str, id: int, /, **kwargs) -> BaseShipModule:
     module_def = ModuleDefs.MAP.get(def_name, None)
     module_class = _MAP.get(def_name, None)
 
     if module_def and module_class:
-        return module_class(module_def, env, id, **kwargs)
+        return module_class(module_def, id, **kwargs)
 
     raise NotFoundModuleError()
