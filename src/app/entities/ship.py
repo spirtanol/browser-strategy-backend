@@ -96,12 +96,12 @@ class ShipEntity:
     def update(self, dt: float, world: World):
         self.command_queue.update(dt, world)        
         self._crew_update(dt)
-        self._modules_update(dt, world)
+        self._modules_update(dt)
 
-    def _modules_update(self, dt: float, world: World):
+    def _modules_update(self, dt: float):
         for phase in (UpdatePhase.Anounce, UpdatePhase.Balance, UpdatePhase.Execution):
             for module in self.modules:
-                module.update(dt, phase, world)
+                module.update(dt, phase)
 
     def _crew_update(self, dt: float):
         if self.crew <= 0:

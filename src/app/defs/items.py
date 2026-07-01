@@ -28,3 +28,4 @@ class NetworkResource(enum.StrEnum):
     Weight = 'wght'
     HP = 'hp'
     Floatage = 'float'
+    HarvestingFish = 'har_fish'

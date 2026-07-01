@@ -9,7 +9,6 @@ from app.defs.enums import MovingState
 
 if TYPE_CHECKING:
     from ..ship import ShipEntity
-    from ..world import World
 
 
 T = TypeVar('T', bound='BaseShipModule')
@@ -46,7 +45,7 @@ class BaseShipModule:
         self.id = state.get('id', 0)
         self._hp = state.get('hp', self.module_def.hp)
 
-    def update(self, dt: float, phase: UpdatePhase, world: World):
+    def update(self, dt: float, phase: UpdatePhase):
         pass
 
     def attached(self, ship: ShipEntity):
