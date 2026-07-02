@@ -4,10 +4,12 @@ from .handlers.feed import FeedCommandParams, feed_command
 from .handlers.move_to_object import move_to_object_command, MoveToObjectCommandParams
 from .handlers.dock_to_platform import dock_to_platform_command, DockToPlatformCommandParams
 from .handlers.trade import TradeCommandParams, trade_command
+from .handlers.fishing import FishingCommandParams, fishing_command
 from .resolvers.ship import ship_command_resolver
 from .resolvers.move_to_object_resolver import move_to_object_resolver
 from .resolvers.dock_to_platform_resolver import dock_to_platform_resolver
 from .resolvers.trade_resolver import trade_resolver
+from .resolvers.fishing_resolver import fishing_resolver
 
 
 COMMAND_CONFIG = {
@@ -40,5 +42,10 @@ COMMAND_CONFIG = {
         'dto': TradeCommandParams,
         'resolver': trade_resolver,
         'handler': trade_command
+    },
+    'fishing': {
+        'dto': FishingCommandParams,
+        'resolver': fishing_resolver,
+        'handler': fishing_command
     }
 }

@@ -8,12 +8,14 @@ from app.utils import xy
 from app.defs import consts as Consts
 from .move_to_object import MoveToObjectCommand
 from app.defs import items as ItemDefs
+from .factory import register_command
 
 if TYPE_CHECKING:
     from ..ship import ShipEntity
     from ..site import SiteEntity
 
 
+@register_command()
 class FishingCommand(BaseCommand):
     name = 'fishing'
 

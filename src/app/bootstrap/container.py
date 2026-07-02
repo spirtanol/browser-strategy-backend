@@ -18,6 +18,7 @@ from app.services.lifestate.pusher import LifeStatePusher
 from app.services.lifestate.registry import LifeStateRegistry
 from app.services.site.core import CoreSiteService, SiteRepository
 from app.services.site.action import SiteService
+from app.services.site.client import ClientSiteService
 from app.services.token import TokenService
 from app.services.auth import AuthService
 from app.mappers.ship import ShipMapper
@@ -66,6 +67,12 @@ class Container:
         return SiteRepository(
             mapper=self.site_mapper,
             session_factory=self.get_session
+        )
+
+    @cached_property
+    def client_site_service(self) -> ClientSiteService:
+        return ClientSiteService(
+            site_repository=self.site_repository
         )
 
     @cached_property

@@ -3,5 +3,6 @@ from . import (
     move_to_object, 
     docking,
     trade,
-    undocking
+    undocking,
+    fishing
 )

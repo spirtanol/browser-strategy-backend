@@ -66,7 +66,6 @@ async def seed_world(
     
     ship.add_module(ModuleFactory.create(ModuleDefs.BaseGenerator.name, ship.get_counter(), active=True))
     ship.add_module(ModuleFactory.create(ModuleDefs.BaseEngine.name, ship.get_counter(), active=True))
-    ship.add_module(ModuleFactory.create(ModuleDefs.FishNet.name, ship.get_counter(), action=True))
     ship.add_module(ModuleFactory.create(ModuleDefs.FishNet.name, ship.get_counter(), active=True))
     
     ship.crew = 10

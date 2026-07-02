@@ -2,15 +2,17 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from .base import BaseShipModule, UpdatePhase
-from app.defs.modules import BaseEngine, HarvesterModuleDef
+from app.defs.modules import HarvesterModuleDef, FishNet
 from app.defs.enums import MovingState
 from app.defs.items import NetworkResource, Fish
+from .factory import register_module
 
 if TYPE_CHECKING:
     from ..ship import ShipEntity
     from ..world import World
 
 
+@register_module(FishNet.name)
 class FishNetModule(BaseShipModule):
     def __init__(
         self,
@@ -18,7 +20,7 @@ class FishNetModule(BaseShipModule):
         id: int,
         active: bool = True
     ):
-        super().__init__(module_def, env, id)
+        super().__init__(module_def, id)
         self.__def = module_def
         self.active: bool = active
 
