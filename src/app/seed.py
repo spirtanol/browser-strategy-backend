@@ -45,8 +45,8 @@ async def seed_world(
 
     # Создаем пользователя
     create_user_dto = CreateUserSchema(
-        name='spirt',
-        email='spirt@test.com',
+        name='player 1',
+        email='player@test.com',
         password='12qwaszx',
         is_npc=False
     )

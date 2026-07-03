@@ -1,34 +1,13 @@
 x-backend-common: &backend_common
+  build:
+    context: .
+    dockerfile: Dockerfile
   image: game:${APP_VERSION:-latest}
-  working_dir: /app
-  volumes:
-    - .:/app
   env_file:
     - .env
-  user: "${UID}:${GID}"
-  environment:
-    USER: "${UID}"
-    LOGNAME: "${UID}"
   restart: unless-stopped
 
 services:
-  core:
-    <<: *backend_common
-    container_name: game-core-${CONT_PREFIX:-prod}
-    command: ["poetry", "run", "python", "-m", "app.main", "0.0.0.0", "8000"]
-    depends_on:
-      - db
-      - redis
-
-  web:
-    <<: *backend_common
-    container_name: geme-web-${CONT_PREFIX:-prod}
-    command: ["poetry", "run", "python", "-m", "app.run_web", "0.0.0.0", "8000"]
-    depends_on:
-      - core
-    ports:
-      - "${HOST:-127.0.0.1}:${PORT:-8000}:8000"
-
   db:
     image: mariadb:10.4
     container_name: game-mariadb
@@ -44,6 +23,11 @@ services:
       - MYSQL_PASSWORD=${DB_PASS}
       - MYSQL_ROOT_PASSWORD=321
       - TZ=UTC
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u$$DB_USER -p$$DB_PASS"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
 
   redis:
     image: redis:7-alpine
@@ -52,6 +36,43 @@ services:
     volumes:
       - redisdata:/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+
+  db-init:
+    <<: *backend_common
+    container_name: game-db-init
+    restart: "no"
+    command: >
+      sh -c "alembic upgrade head && python -m app.seed"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  core:
+    <<: *backend_common
+    container_name: game-core-${CONT_PREFIX:-prod}
+    command: ["python", "-m", "app.main", "0.0.0.0", "8000"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+
+  web:
+    <<: *backend_common
+    container_name: game-web-${CONT_PREFIX:-prod}
+    command: ["python", "-m", "app.run_web", "0.0.0.0", "8000"]
+    depends_on:
+      core:
+        condition: service_started
+    ports:
+      - "${HOST:-127.0.0.1}:${PORT:-8000}:8000"
 
 volumes:
   mariadb-data:
