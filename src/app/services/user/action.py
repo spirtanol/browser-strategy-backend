@@ -31,7 +31,6 @@ class UserService:
         user = UserModel(
             name=schema.name,
             email='npc@nomail.npc',
-            password_hash='fffffffffff',
             is_npc=True
         )
 

@@ -16,6 +16,6 @@ class UserModel(BaseModel):
         nullable=False,
     )
     email: Mapped[str] = mapped_column(String(128), nullable=False, unique=True)
-    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=True)
     token_version: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     is_npc: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
