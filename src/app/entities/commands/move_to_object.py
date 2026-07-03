@@ -41,8 +41,8 @@ class MoveToObjectCommand(BaseCommand):
                     self.finished
                     return
 
-                destX = platform.x
-                destY = platform.y
+                destX = site.x
+                destY = site.y
             case _:
                 self.finished = True
                 return

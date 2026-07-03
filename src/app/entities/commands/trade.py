@@ -80,7 +80,10 @@ class TradeCommand(BaseCommand):
                         left = op['quantity']
                         if op['op_type'] == MarketOrderType.Sell:
                             have = ship.get_amount(item_type)
-                            left = min(left, have)
+                            if left == -1:
+                                left = have
+                            else:
+                                left = min(left, have)
 
                         for order in orders:
                             if left <= 0:

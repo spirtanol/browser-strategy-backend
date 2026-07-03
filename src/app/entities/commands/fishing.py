@@ -49,7 +49,7 @@ class FishingCommand(BaseCommand):
                 self.finished = True
                 return
         
-        if ship.attach_to_type != ObjectType.Site or ship.attached_to_id != self.site_id:
+        if ship.attached_to_type != ObjectType.Site or ship.attached_to_id != self.site_id:
             distance = xy.distance(ship.pos.x, ship.pos.y, self.site.x, self.site.y)
 
             if distance < Consts.ObjectRadius:
@@ -63,7 +63,7 @@ class FishingCommand(BaseCommand):
             self._progress += dt
             if self._progress >= Consts.HarvestingCycle:
                 self._progress -= Consts.HarvestingCycle
-                extraction_quantity = ship.get_net(ItemDefs.NetworkResource.HarvestingFish) * self.site.efficiency
+                extraction_quantity = ship.get_net(ItemDefs.NetworkResource.HarvestingFish).value * self.site.efficiency
                 self.site.reserve -= extraction_quantity
                 fish_quantity = int(extraction_quantity * 1000 / ItemDefs.Fish.weight)
                 ship.storage.push(ItemDefs.Fish, fish_quantity)

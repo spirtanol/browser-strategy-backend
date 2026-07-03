@@ -1,12 +1,10 @@
 from typing import Optional
 
 from app.defs.enums import SiteType, SiteContent
-from .world import World
 from app.defs.deposites import Restriction
 from .anchor_point import AnchorPoint, ObjectType
+from app.defs.consts import SiteRecoveryCycle
 
-
-_RECOVERY_CYCLE = 24 * 60 * 60
 
 class SiteEntity(AnchorPoint):
     def __init__(self, id: int = 0, restriction: Optional[Restriction] = None):
@@ -30,8 +28,8 @@ class SiteEntity(AnchorPoint):
         efficiency_range = self.restriction.max_efficiency - self.restriction.min_efficiency
         return self.restriction.min_efficiency + efficiency_range * fill_ratio
 
-    def update(self, dt: float, world: World):
-        recovery = self.restriction.recovery_rate * dt / _RECOVERY_CYCLE
+    def update(self, dt: float):
+        recovery = self.restriction.recovery_rate * dt / SiteRecoveryCycle
         self.reserve = min(self.restriction.max_reserve, self.reserve + recovery)
 
     def get_type(self) -> ObjectType:

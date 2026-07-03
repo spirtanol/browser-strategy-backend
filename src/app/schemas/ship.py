@@ -37,7 +37,7 @@ class ShipStateOut(EntityState):
     position: Position
     max_speed: float
     command: Optional[ShipCommandOut] = None
-    state: MovingState
+    moving_state: MovingState
     attached_to_id: Optional[int]
     attached_to_type: Optional[ObjectType]
 
@@ -58,7 +58,7 @@ class ShipStateOut(EntityState):
             position=Position(x=ship.pos.x, y=ship.pos.y),
             max_speed=ship.max_speed,
             command=ShipCommandOut.from_entity(current_command) if current_command else None,
-            state=ship.state,
+            moving_state=ship.moving_state,
             attached_to_id=ship.attached_to_id,
             attached_to_type=ship.attached_to_type
         )

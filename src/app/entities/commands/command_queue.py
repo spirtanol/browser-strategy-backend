@@ -28,8 +28,8 @@ class CommandQueue:
             if self.queue[0].finished:
                 self.queue.popleft()
                 if len(self.queue) == 0:
-                    if self.ship.state in (MovingState.Move, MovingState.Maneuvering):
-                        self.ship.state = MovingState.Idle
+                    if self.ship.moving_state in (MovingState.Move, MovingState.Maneuvering):
+                        self.ship.moving_state = MovingState.Idle
             
     def clear(self):
         self.queue.clear()

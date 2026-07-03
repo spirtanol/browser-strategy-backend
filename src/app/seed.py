@@ -39,8 +39,8 @@ async def seed_world(
 
     # Создаем рыбное место
     fish_site = SiteEntity(restriction=BaseRestrictions.get(SiteContent.Fish))
-    fish_site.x = 5.0
-    fish_site.y = -2.0
+    fish_site.x = 2.0
+    fish_site.y = -1.0
     await site_service.save(fish_site)
 
     # Создаем пользователя
