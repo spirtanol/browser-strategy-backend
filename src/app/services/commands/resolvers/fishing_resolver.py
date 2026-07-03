@@ -14,13 +14,13 @@ async def fishing_resolver(context: ResolverContext, user: UserEntity, dto: Fish
     fishing_site = await context.client_site_service.find(dto.site_id)
 
     if fishing_site is None:
-        raise ResolveResult(
+        return ResolveResult(
             success=False,
             message=f'Объект {dto.site_id} не существует'
         )
 
     if fishing_site.get_type() != ObjectType.Site:
-        raise ResolveResult(
+        return ResolveResult(
             success=False,
             message=f'{dto.site_id} не рыбное место'
         )
