@@ -4,7 +4,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import ForeignKey, Integer, Index, String
 
 from .base import BaseModel
-from app.core.types import MarketOrderType
+from app.defs.enums import MarketOrderType
 
 
 class MarketOrder(BaseModel):

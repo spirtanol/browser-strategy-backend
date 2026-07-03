@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, TypedDict, Optional
 from .base import BaseCommand
 from .factory import register_command
 from ..world import World
-from app.core.types import ObjectType, MarketOrderType
+from app.defs.enums import ObjectType, MarketOrderType
 from .docking import DockingCommand
 from app.defs.items import MAP as ItemMap
 
@@ -80,7 +80,10 @@ class TradeCommand(BaseCommand):
                         left = op['quantity']
                         if op['op_type'] == MarketOrderType.Sell:
                             have = ship.get_amount(item_type)
-                            left = min(left, have)
+                            if left == -1:
+                                left = have
+                            else:
+                                left = min(left, have)
 
                         for order in orders:
                             if left <= 0:

@@ -5,7 +5,7 @@ from .base import BaseCommand
 from .factory import register_command
 from ..world import World
 from .undocking import UndockingCommand
-from app.core.types import MovingState
+from app.defs.enums import MovingState
 
 if TYPE_CHECKING:
     from ..ship import ShipEntity
@@ -33,14 +33,14 @@ class MoveCommand(BaseCommand):
         if self.finished:
             return
 
-        if ship.state == MovingState.Docked:
+        if ship.moving_state == MovingState.Docked:
             undocking = UndockingCommand()
             undocking.is_dependend = True
             ship.command_queue.add(undocking, True)
             return
 
         delta = ship.max_speed / 3600.0 * dt
-        ship.state = MovingState.Move
+        ship.moving_state = MovingState.Move
         if ship.pos.move_to(self.x, self.y, delta):
             self.finished = True
-            ship.state = MovingState.Idle
+            ship.moving_state = MovingState.Idle

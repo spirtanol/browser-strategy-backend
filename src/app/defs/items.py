@@ -11,12 +11,14 @@ class StorageItemType:
 MEAL = StorageItemType('Meal', 0.5)
 EMPTY_BARREL = StorageItemType('EmptyBarrel', 10)
 FUEL_BARREL = StorageItemType('FuelBarrel', 100 + EMPTY_BARREL.weight)
+Fish = StorageItemType('Fish', 1)
 
 
 MAP = {
     MEAL.name: MEAL,
     EMPTY_BARREL.name: EMPTY_BARREL,
-    FUEL_BARREL.name: FUEL_BARREL
+    FUEL_BARREL.name: FUEL_BARREL,
+    Fish.name: Fish
 }
 
 class NetworkResource(enum.StrEnum):
@@ -26,3 +28,4 @@ class NetworkResource(enum.StrEnum):
     Weight = 'wght'
     HP = 'hp'
     Floatage = 'float'
+    HarvestingFish = 'har_fish'

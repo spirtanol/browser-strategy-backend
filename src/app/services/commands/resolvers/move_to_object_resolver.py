@@ -14,6 +14,9 @@ async def move_to_object_resolver(context: ResolverContext, user: UserEntity, dt
         case ObjectType.Platform:
             if await context.client_platform_service.exists(dto.obj_id):
                 return ResolveResult(success=True)
+        case ObjectType.Site:
+            if await context.client_site_service.exists(dto.obj_id):
+                return ResolveResult(success=True) 
 
     return ResolveResult(
         success=False,

@@ -1,8 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
-from app.core.config import Consts
-from app.core.types import ObjectType
+import app.defs.consts as Consts
+from app.defs.enums import ObjectType
 from .base import BaseCommand
 from .factory import register_command
 from ..world import World
@@ -33,17 +33,25 @@ class MoveToObjectCommand(BaseCommand):
                     self.finished = True
                     return
 
-                distance = xy.distance(ship.pos.x, ship.pos.y, platform.x, platform.y)
-
-                if distance < Consts.ObjectRadius:
-                    self.finished = True
-                    return
-
                 destX = platform.x
                 destY = platform.y
+            case ObjectType.Site:
+                site = world.find_site(self.obj_id)
+                if site is None:
+                    self.finished
+                    return
+
+                destX = site.x
+                destY = site.y
             case _:
                 self.finished = True
                 return
+
+        distance = xy.distance(ship.pos.x, ship.pos.y, destX, destY)
+
+        if distance < Consts.ObjectRadius:
+            self.finished = True
+            return
 
         x, y = xy.point_at_distance(
             destX, 

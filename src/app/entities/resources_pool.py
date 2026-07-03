@@ -4,12 +4,14 @@ class ResourcesPool:
         self._cache = None
 
     def add(self, id: int, amount: int | float):
-        self._pool[id] = amount
-        self._cache = None
+        if id not in self._pool or self._pool[id] != amount:
+            self._pool[id] = amount
+            self._cache = None
 
     def remove(self, id: int):
-        self._pool.pop(id, None)
-        self._cache = None
+        if id in self._pool:
+            self._pool.pop(id, None)
+            self._cache = None
 
     @property
     def value(self):

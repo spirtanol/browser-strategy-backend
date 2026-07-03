@@ -1,7 +1,7 @@
 from .base import ShipCommand
 from app.entities.world import World
 from app.entities.commands.move_to_object import MoveToObjectCommand
-from app.core.types import ObjectType
+from app.defs.enums import ObjectType
 
 
 class MoveToObjectCommandParams(ShipCommand):

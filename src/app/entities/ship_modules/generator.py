@@ -1,24 +1,30 @@
-from .base import BaseModule, UpdatePhase, Environment
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+from .base import BaseShipModule, UpdatePhase
 from app.defs.items import NetworkResource, FUEL_BARREL, EMPTY_BARREL
-from app.defs.modules import GeneratorModuleDef, GENERATOR
+from app.defs.modules import GeneratorModuleDef, BaseGenerator
 from .factory import register_module
+from app.defs.consts import DayLenght
+
+if TYPE_CHECKING:
+    from ..ship import ShipEntity
 
 
-CYCLE_DURATION = 24.0 * 60.0 * 60.0
 FUEL_WEIGHT = FUEL_BARREL.weight - EMPTY_BARREL.weight
 
-@register_module(GENERATOR.name)
-class GeneratorModule(BaseModule):
+@register_module(BaseGenerator.name)
+class GeneratorModule(BaseShipModule):
     def __init__(
         self,  
         module_def: GeneratorModuleDef,
-        env: Environment,
         id: int,
         active: bool = True
     ):
-        super().__init__(module_def, env, id)
+        super().__init__(module_def, id)
         self.fuel: float = 0.0
         self.active: bool = active
+        self.__def = module_def
 
     def to_dict(self) -> dict[str, any]:
         data = super().to_dict()
@@ -35,15 +41,15 @@ class GeneratorModule(BaseModule):
         if self.active:
             if phase == UpdatePhase.Anounce:
                 output = self.module_def.output if self.fuel > 0 else 0.0
-                self.env.get_net(NetworkResource.PowerOut).add(self.id, output)
-                self.env.get_net(NetworkResource.Weight).add(self.id, self.fuel * FUEL_WEIGHT)
+                self.ship.get_net(NetworkResource.PowerOut).add(self.id, output)
+                self.ship.get_net(NetworkResource.Weight).add(self.id, self.fuel * FUEL_WEIGHT)
             elif phase == UpdatePhase.Execution:
-                consumption = min(dt / CYCLE_DURATION, 1.0)
+                consumption = dt / DayLenght * self.__def.fuel_consumption
                 if self.fuel <= consumption:
-                    if self.env.pull(FUEL_BARREL, 1):
-                        self.env.push(EMPTY_BARREL, 1)
+                    if self.ship.pull(FUEL_BARREL, 1):
+                        self.ship.push(EMPTY_BARREL, 1)
                         self.fuel += 1.0
                 self.fuel -= min(consumption, self.fuel)
     
-    def onAttached(self, env: Environment):
+    def on_attached(self, ship: ShipEntity):
         self.update(0.0, UpdatePhase.Anounce)

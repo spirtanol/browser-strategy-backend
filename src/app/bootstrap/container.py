@@ -16,11 +16,15 @@ from app.services.platform.action import PlatformService
 from app.services.platform.client import ClientPlatformService
 from app.services.lifestate.pusher import LifeStatePusher
 from app.services.lifestate.registry import LifeStateRegistry
+from app.services.site.core import CoreSiteService, SiteRepository
+from app.services.site.action import SiteService
+from app.services.site.client import ClientSiteService
 from app.services.token import TokenService
 from app.services.auth import AuthService
 from app.mappers.ship import ShipMapper
 from app.mappers.user import UserMapper
 from app.mappers.platform import PlatformMapper
+from app.mappers.site import SiteMapper
 from app.services.user.action import UserService, UserRepository
 from app.services.user.core import CoreUserService
 from app.services.user.client import ClientUserService
@@ -55,6 +59,35 @@ class Container:
         )
 
     @cached_property
+    def site_mapper(self) -> SiteMapper:
+        return SiteMapper()
+
+    @cached_property
+    def site_repository(self) -> SiteRepository:
+        return SiteRepository(
+            mapper=self.site_mapper,
+            session_factory=self.get_session
+        )
+
+    @cached_property
+    def client_site_service(self) -> ClientSiteService:
+        return ClientSiteService(
+            site_repository=self.site_repository
+        )
+
+    @cached_property
+    def core_site_service(self) -> CoreSiteService:
+        return CoreSiteService(
+            site_repo=self.site_repository
+        )
+
+    @cached_property
+    def site_service(self) -> SiteService:
+        return SiteService(
+            site_repo=self.site_repository
+        )
+
+    @cached_property
     def platform_mapper(self) -> PlatformMapper:
         return PlatformMapper()
 
@@ -68,9 +101,7 @@ class Container:
     @cached_property
     def core_platform_service(self) -> CorePlatformService:
         return CorePlatformService(
-            platform_mapper=self.platform_mapper,
-            platform_repo=self.platform_repository,
-            redis_factory=self.get_redis
+            platform_repo=self.platform_repository
         )
 
     @cached_property
