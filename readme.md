@@ -39,8 +39,8 @@ The project uses a **decoupled architecture** where a single codebase can be lau
 If you just want to launch the fully automated architecture and test the real-time synchronization, use the release configuration. The core engine will automatically wait for the database, run Alembic migrations, apply seed data, and spin up both Web and Core layers.
 
 1. **Prepare Environment Variables:**
-   ```bash
-   cp .env.example .env
+```bash
+cp .env.example .env
 
 ```
 
@@ -60,8 +60,8 @@ For active development, code refactoring, or running migrations manually, use th
 A `Makefile` is provided to simplify daily routines:
 
 * **Start Development Environment:**
-  ```bash
-  make up
+```bash
+make up
 
 ```
 
