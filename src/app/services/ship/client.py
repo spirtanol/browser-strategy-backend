@@ -1,7 +1,7 @@
+from logging import Logger
 from typing import Optional, Callable
 import asyncio
 import json
-import traceback
 
 from redis.asyncio import Redis
 
@@ -29,7 +29,7 @@ class ClientShipService:
     async def find(self, id: int) -> Optional[ShipEntity]:
         return await self._ship_repo.find(id)
 
-    async def subscribe_to_updates(self, id: int) -> ShipEntity:
+    async def subscribe_to_updates(self, id: int, logger: Logger) -> ShipEntity:
         redis = self._redis_factory()
         subscriber = redis.pubsub()
         channel_name = f'ship:{id}'
@@ -53,8 +53,7 @@ class ClientShipService:
                         await self._state_pusher.keep_alive_ship(id)
                         last_keep_alive = now
         except Exception as e:
-            traceback.print_exc()
-            print(str(e))
+            logger.exception()
         finally:
             _alive_ships[id] -= 1
             if _alive_ships[id] == 0:

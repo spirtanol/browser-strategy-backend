@@ -1,7 +1,7 @@
 import asyncio
 from typing import Callable, Optional
 import json
-import traceback
+from logging import Logger
 
 from app.repositories.user import UserRepository, UserEntity
 from app.core.db import Redis
@@ -27,7 +27,7 @@ class ClientUserService:
     async def find(self, id: int) -> Optional[UserEntity]:
         return await self._user_repo.find(id)
 
-    async def subscribe_to_updates(self, id: int) -> UserEntity:
+    async def subscribe_to_updates(self, id: int, logger: Logger) -> UserEntity:
         redis = self._redis_factory()
         subscriber = redis.pubsub()
         channel_name = f'user:{id}'
@@ -51,8 +51,7 @@ class ClientUserService:
                         await self._state_pusher.keep_alive_user(id)
                         last_keep_alive = now
         except Exception as e:
-            traceback.print_exc()
-            print(str(e))
+            logger.exception()
         finally:
             _alive_users[id] -= 1
             if _alive_users[id] == 0:

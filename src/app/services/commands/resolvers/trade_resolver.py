@@ -1,15 +1,12 @@
-from .base import ResolverContext, ResolveResult
+from .base import ResolverContext, CommandResolvingError
 from app.entities.user import UserEntity
 from ..handlers.trade import TradeCommandParams
 from .dock_to_platform_resolver import dock_to_platform_resolver
 from app.defs.items import MAP as ItemMap
 
 
-async def trade_resolver(context: ResolverContext, user: UserEntity, dto: TradeCommandParams) -> ResolveResult:
-    res = await dock_to_platform_resolver(context, user, dto)
-
-    if not res.success:
-        return res
+async def trade_resolver(context: ResolverContext, user: UserEntity, dto: TradeCommandParams):
+    await dock_to_platform_resolver(context, user, dto)
 
     errors = []
     if len(dto.operations) > 0:
@@ -19,7 +16,5 @@ async def trade_resolver(context: ResolverContext, user: UserEntity, dto: TradeC
     else:
         errors = ['Не заданы операции для торговли']
 
-    return ResolveResult(
-        success=len(errors) == 0,
-        message='\n'.join(errors) if len(errors) > 0 else None
-    )
+    if len(errors) > 0:
+        raise CommandResolvingError(dto, '\n'.join(errors))

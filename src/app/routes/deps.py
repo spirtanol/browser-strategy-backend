@@ -1,9 +1,12 @@
 from fastapi import Query, status, HTTPException
+import logging
 
 from app.bootstrap.container import get_context_container
 from app.entities.user import UserEntity
 from app.core.exceptions import UserNotFound, AuthError
 
+
+logger = logging.getLogger("app.core.engine")
 
 async def get_ws_user(
     token: str = Query(...)
@@ -19,7 +22,7 @@ async def get_ws_user(
                     detail="Authentication failed"
                 )
             except Exception as e:
-                print(str(e))
+                logger.exception()
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Internal server error"

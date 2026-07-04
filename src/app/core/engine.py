@@ -2,7 +2,7 @@ from __future__ import annotations
 import asyncio
 import time
 from typing import TYPE_CHECKING, AsyncContextManager, Optional
-import traceback
+import logging
 
 from app.services.ship.core import CoreShipService
 from app.services.user.core import CoreUserService
@@ -15,6 +15,9 @@ if TYPE_CHECKING:
     from .ship import ShipEntity
     from .platform import PlatformEntity
     from .user import UserEntity
+
+
+logger = logging.getLogger("app.core.engine")
 
 class Engine(World):
     def __init__(
@@ -58,7 +61,7 @@ class Engine(World):
 
         async with self.transaction_manager():
             if await self.ship_service.is_empty():
-                print('Мир пуст')
+                logger.debug('Мир пуст')
                 return
 
         async with self.transaction_manager():
@@ -115,19 +118,17 @@ class Engine(World):
                 await asyncio.sleep(sleep_time)
 
         except (KeyboardInterrupt, asyncio.CancelledError):
-            traceback.print_exc()
-            print("\nСимуляция остановлена пользователем.")
+            logger.info('Остановка симуляции')
         except Exception as e:
-            traceback.print_exc()
-            print('\nВсе пропало', str(e))
+            logger.exception()
         finally:
             self.is_running = False
-            print("Сохраняем прогресс...")
+            logger.info("Сохраняем прогресс...")
             async def final_save():
                 await self._save()
                     
             await asyncio.shield(final_save())
-            print("Прогресс сохранен. Выход.")
+            logger.info("Прогресс сохранен. Выход.")
 
     def stop(self):
         self.running = False

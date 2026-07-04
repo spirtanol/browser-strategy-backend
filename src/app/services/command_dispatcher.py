@@ -1,5 +1,4 @@
 from typing import Callable
-import inspect
 
 from redis.asyncio import Redis
 
@@ -21,18 +20,12 @@ class CommandDispatcherService:
 
     async def dispatch(self, command: GameCommand, user: UserEntity):
         resolver, dto_class = get_resolver(command.action)
-        dto = dto_class.model_validate(command.params)
-        result = resolver(self._resolver_context, user, dto)
+        dto = dto_class.model_validate({'id': command.id, **command.params})
+        await resolver(self._resolver_context, user, dto)
         
-        if inspect.isawaitable(result):
-            result = await result
-        
-        if result.success:
-            redis_client = self._redis_factory()
+        redis_client = self._redis_factory()
 
-            await redis_client.publish(
-                self.channel_name,
-                command.model_dump_json()
-            )
-        else:
-            print(result.message)
+        await redis_client.publish(
+            self.channel_name,
+            command.model_dump_json()
+        )

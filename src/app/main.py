@@ -1,13 +1,18 @@
 import asyncio
 import signal
 from typing import Callable, AsyncContextManager
-import traceback
+import logging
 
 from app.bootstrap.container import get_context_container, CommandHandlerService
 from app.core.engine import Engine
 from app.core.disposer import dispose
 from app.schemas.commands import GameCommand
+from app.utils.async_helpers import fire_and_forget
+from app.core.logging_config import init_logging
 
+
+init_logging()
+logger = logging.getLogger("app.core")
 
 async def life_state_loop(check_func: Callable, interval: int):
     try:
@@ -33,7 +38,7 @@ async def _run():
             market_service=container.market_service
         )
 
-        async def alive_handler(message):
+        def alive_handler(message):
             ename, id = message['data'].split(':')
             id = int(id)
             match ename:
@@ -42,14 +47,15 @@ async def _run():
                 case 'user':
                     container.life_state_registry.add_user(id)
 
-        async def command_handler(message):
-            try:
-                command = GameCommand.model_validate_json(message['data'])
-                async with container.transaction():
-                    await container.command_handler_service.handle(command, engine)
-            except Exception as e:
-                traceback.print_exc()
-                print(f'Ошибка при обработке команды {e}')
+        def command_handler(message):
+            async def _handler():
+                try:
+                    command = GameCommand.model_validate_json(message['data'])
+                    async with container.transaction():
+                        await container.command_handler_service.handle(command, engine)
+                except Exception as e:
+                    logger.exception(f'Ошибка при обработке команды {e}')
+            fire_and_forget(_handler())
 
         redis_client = container.get_redis()
         subscriber = redis_client.pubsub()
@@ -72,7 +78,7 @@ async def _run():
         life_task = asyncio.create_task(life_state_loop(container.life_state_registry.check_active, config.alive_objects_duration))
 
         def handle_stop_signal():
-            print("Получен сигнал SIGTERM от Docker, останавливаемся...")
+            logger.info("Получен сигнал SIGTERM от Docker, останавливаемся...")
             engine.stop()
 
         for sig in (signal.SIGTERM, signal.SIGINT):

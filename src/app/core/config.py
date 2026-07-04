@@ -20,6 +20,7 @@ class AppSettings(BaseSettings):
     debug: bool = Field(False, env="DEBUG")
     database_url: str = Field(..., env="DATABASE_URL")
     redis_url: str = Field(..., env='REDIS_URL')
+    logs_path: str = 'logs'
     
     # Настройки цикла
     dt_multiplier: float = 480

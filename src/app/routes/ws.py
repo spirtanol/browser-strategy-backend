@@ -1,5 +1,5 @@
 import asyncio
-import traceback
+import logging
 
 from pydantic import ValidationError
 from fastapi import (
@@ -14,10 +14,12 @@ from fastapi import (
 from app.bootstrap.container import get_context_container
 from app.core.exceptions import ShipNotFound, AuthError
 from app.schemas.ship import ShipStateOut
-from app.schemas.commands import GameCommandRequest
+from app.schemas.commands import GameCommandRequest, GameCommand
 from .deps import get_ws_user, UserEntity
 from app.schemas.user import UserStateOut
 
+
+logger = logging.getLogger("app.core.engine")
 
 def create_ws_router(prefix: str, tags: list[str]):
     router = APIRouter(
@@ -46,13 +48,13 @@ def create_ws_router(prefix: str, tags: list[str]):
                     redis_client = container.get_redis()
 
                     async def ship_state_loop():
-                        async for ship in container.client_ship_service.subscribe_to_updates(ship_id):
+                        async for ship in container.client_ship_service.subscribe_to_updates(ship_id, logger):
                             ship_dto = ShipStateOut.from_entity(ship)
                             await websocket.send_text(ship_dto.model_dump_json())
 
                     user_id = user.id
                     async def user_state_loop():
-                        async for user in container.client_user_service.subscribe_to_updates(user_id):
+                        async for user in container.client_user_service.subscribe_to_updates(user_id, logger):
                             user_dto = UserStateOut.from_entity(user)
                             await websocket.send_text(user_dto.model_dump_json())
 
@@ -61,15 +63,17 @@ def create_ws_router(prefix: str, tags: list[str]):
                             while True:
                                 data = await websocket.receive_json()
                                 try:
-                                    command = GameCommandRequest.model_validate(data)
+                                    request = GameCommandRequest.model_validate(data)
+                                    command = GameCommand(
+                                        action=request.action,
+                                        params=request.params
+                                    )
                                     async with container.transaction():
                                         await container.command_dispatcher_service.dispatch(command, user)
                                 except ValidationError as e:
-                                    traceback.print_exc()
-                                    print(f'Ошибка парса команды {str(e)}')
+                                    logger.exception(f'Ошибка парса команды {str(e)}')
                                 except Exception as e:
-                                    traceback.print_exc()
-                                    print(f'Ошибка обработки команды {str(e)}')
+                                    logger.exception(f'Ошибка обработки команды {str(e)}')
                         except WebSocketDisconnect:
                             pass
 

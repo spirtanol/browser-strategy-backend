@@ -1,7 +1,6 @@
 from typing import Protocol, Optional
 
-from pydantic import BaseModel
-
+from ..handlers.base import UserCommand
 from app.services.ship.client import ClientShipService
 from app.services.platform.client import ClientPlatformService
 from app.services.market import MarketService
@@ -14,7 +13,6 @@ class ResolverContext(Protocol):
     market_service: MarketService
     client_site_service: ClientSiteService
 
-
-class ResolveResult(BaseModel):
-    success: bool
-    message: Optional[str] = None
+class CommandResolvingError(Exception):
+    def __init__(self, command: UserCommand, message: str):
+        super().__init__(f"Ошибка выполнения команды {command}: {message}")
