@@ -13,10 +13,7 @@ from .world import World
 from app.utils import xy
 from app.defs.enums import MovingState, ObjectType
 from .anchor_point import AnchorPoint
-
-
-HUNGER_CYCLE: float = 60 * 60 * 8
-ENVIRONMENT_SPEED_FACTOR = 1.0 - 0.2
+from app.defs.consts import HungerCycle, EnvironmentSpeedFactor
 
 
 class Position:
@@ -107,7 +104,7 @@ class ShipEntity:
         if self.crew <= 0:
             return
 
-        self.hunger += (dt / HUNGER_CYCLE)
+        self.hunger += (dt / HungerCycle)
 
         if self.hunger >= 1.0:
             meals_on_storage = self.storage.get_amount(MEAL)
@@ -153,7 +150,12 @@ class ShipEntity:
     @property
     def max_speed(self) -> float:
         thrust = self.get_net(NetworkResource.Thrust).value
-        return thrust / self.weight * ENVIRONMENT_SPEED_FACTOR
+        base_drag = math.sqrt(self.floatage)
+    
+        load_ratio = self.weight / self.floatage
+        
+        speed = (thrust / base_drag) * (1.0 - (load_ratio * 0.3)) * EnvironmentSpeedFactor
+        return speed
 
     def attach_to(self, anchor_point: AnchorPoint) -> None:
         self.attached_to_id = anchor_point.get_id()
