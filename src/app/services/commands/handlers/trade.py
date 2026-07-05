@@ -14,6 +14,6 @@ def trade_command(world: World, params: TradeCommandParams):
         return
 
     if params.clear_queue:
-        ship.command_queue.clear()
+        ship.command_queue.cancel_all()
 
     ship.command_queue.add(TradeCommand(params.platform_id, params.operations), params.on_top)

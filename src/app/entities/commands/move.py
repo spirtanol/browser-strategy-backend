@@ -44,3 +44,7 @@ class MoveCommand(BaseCommand):
         if ship.pos.move_to(self.x, self.y, delta):
             self.finished = True
             ship.moving_state = MovingState.Idle
+
+    def cancel(self, ship: ShipEntity):
+        if ship.moving_state == MovingState.Move:
+            ship.moving_state = MovingState.Idle

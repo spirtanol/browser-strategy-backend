@@ -73,3 +73,7 @@ class DockingCommand(BaseCommand):
                     platform = self.get_platform(world)
                     ship.attach_to(platform)
                     self.finished = True
+
+    def cancel(self, ship: ShipEntity):
+        if ship.moving_state == MovingState.Maneuvering:
+            ship.moving_state = MovingState.Idle

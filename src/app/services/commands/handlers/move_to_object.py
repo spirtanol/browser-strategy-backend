@@ -27,6 +27,6 @@ def move_to_object_command(world: World, params: MoveToObjectCommandParams):
             return
 
     if params.clear_queue:
-        ship.command_queue.clear()
+        ship.command_queue.cancel_all()
         
     ship.command_queue.add(MoveToObjectCommand(obj_id=params.obj_id, obj_type=params.obj_type), params.on_top)

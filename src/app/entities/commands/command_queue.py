@@ -18,6 +18,7 @@ class CommandQueue:
 
     def add(self, command: BaseCommand, on_top: bool = False):
         if on_top:
+            self.cancel_depends()
             self.queue.appendleft(command)
         else:
             self.queue.append(command)
@@ -31,9 +32,6 @@ class CommandQueue:
                     if self.ship.moving_state in (MovingState.Move, MovingState.Maneuvering):
                         self.ship.moving_state = MovingState.Idle
             
-    def clear(self):
-        self.queue.clear()
-
     def to_dict(self) -> list[dict[str, any]]:
         return [{'name': com.name, 'data': com.to_dict()} for com in self.queue]
 
@@ -47,7 +45,21 @@ class CommandQueue:
         return self.queue[0] if len(self.queue) > 0 else None
 
     def pop_current(self):
-        self.queue.popleft()
+        if len(self.queue) > 0:
+            self.queue[0].cancel(self.ship)
+            self.queue.popleft()
     
     def pop_last(self):
         self.queue.pop()
+
+    def cancel_depends(self):
+        if len(self.queue) > 0:
+            if self.queue[0].is_dependend:
+                self.queue[0].cancel(self.ship)
+                while self.queue[0].is_dependend:
+                    self.queue.popleft()
+
+    def cancel_all(self):
+        if len(self.queue) > 0:
+            self.queue[0].cancel(self.ship)
+            self.queue.clear()

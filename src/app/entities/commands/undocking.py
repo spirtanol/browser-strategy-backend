@@ -45,3 +45,7 @@ class UndockingCommand(BaseCommand):
     def from_dict(self, data: dict[str, any]):
         super().from_dict(data)
         self.progress = data.get('progress', 0.0)
+
+    def cancel(self, ship: ShipEntity):
+        if ship.moving_state == MovingState.Maneuvering:
+            ship.moving_state = MovingState.Docked

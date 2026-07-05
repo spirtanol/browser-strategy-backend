@@ -1,6 +1,5 @@
 from .handlers.move_to import MoveToCommandParams, move_to_command
 from .handlers.cancel import CancelCommandParams, cancel_command
-from .handlers.feed import FeedCommandParams, feed_command
 from .handlers.move_to_object import move_to_object_command, MoveToObjectCommandParams
 from .handlers.dock_to_platform import dock_to_platform_command, DockToPlatformCommandParams
 from .handlers.trade import TradeCommandParams, trade_command
@@ -22,11 +21,6 @@ COMMAND_CONFIG = {
         'dto': CancelCommandParams,
         'resolver': ship_command_resolver,
         'handler': cancel_command
-    },
-    'feed' : {
-        'dto': FeedCommandParams,
-        'resolver': ship_command_resolver,
-        'handler': feed_command
     },
     'move_to_object': {
         'dto': MoveToObjectCommandParams,

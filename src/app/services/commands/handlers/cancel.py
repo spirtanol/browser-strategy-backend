@@ -19,4 +19,4 @@ def cancel_command(world: World, params: CancelCommandParams):
         case 'last':
             ship.command_queue.pop_last()
         case 'all':
-            ship.command_queue.clear()
+            ship.command_queue.cancel_all()

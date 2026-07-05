@@ -14,5 +14,5 @@ def move_to_command(world: World, params: MoveToCommandParams):
         return
 
     if params.clear_queue:
-        ship.command_queue.clear()
+        ship.command_queue.cancel_all()
     ship.command_queue.add(MoveCommand(params.x, params.y), params.on_top)

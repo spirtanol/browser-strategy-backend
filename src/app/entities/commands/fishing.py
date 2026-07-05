@@ -73,4 +73,7 @@ class FishingCommand(BaseCommand):
                 ship.moving_state = MovingState.Idle
                 ship.detach(self.site)
                 return
-            
+
+    def cancel(self, ship: ShipEntity):
+        if ship.moving_state == MovingState.Fishing:
+            ship.moving_state = MovingState.Idle

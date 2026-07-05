@@ -20,6 +20,6 @@ def dock_to_platform_command(world: World, params: DockToPlatformCommandParams):
         return
 
     if params.clear_queue:
-        ship.command_queue.clear()
+        ship.command_queue.cancel_all()
         
     ship.command_queue.add(DockingCommand(platform_id=params.platform_id), params.on_top)
