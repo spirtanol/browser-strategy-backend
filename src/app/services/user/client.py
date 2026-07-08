@@ -51,7 +51,7 @@ class ClientUserService:
                         await self._state_pusher.keep_alive_user(id)
                         last_keep_alive = now
         except Exception as e:
-            logger.exception()
+            logger.exception('Ошибка при получении данных пользователя из ядра')
         finally:
             _alive_users[id] -= 1
             if _alive_users[id] == 0:

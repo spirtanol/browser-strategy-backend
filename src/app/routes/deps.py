@@ -22,7 +22,7 @@ async def get_ws_user(
                     detail="Authentication failed"
                 )
             except Exception as e:
-                logger.exception()
+                logger.exception('Не удалось получить пользователя из токена')
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Internal server error"

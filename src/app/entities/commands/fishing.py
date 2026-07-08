@@ -61,14 +61,30 @@ class FishingCommand(BaseCommand):
                 ship.command_queue.add(move_command, True)
         else:
             self._progress += dt
+            end_of_space = False
+
             if self._progress >= Consts.HarvestingCycle:
                 self._progress -= Consts.HarvestingCycle
                 extraction_quantity = ship.get_net(ItemDefs.NetworkResource.HarvestingFish).value * self.site.efficiency
-                self.site.reserve -= extraction_quantity
-                fish_quantity = int(extraction_quantity * 1000 / ItemDefs.Fish.weight)
-                ship.storage.push(ItemDefs.Fish, fish_quantity)
+                fish_quantity = int(extraction_quantity / ItemDefs.Fish.weight)
+                
+                fish_volume = fish_quantity * ItemDefs.Fish.volume
+                free_space = ship.max_volume - ship.volume
+                if free_space < fish_volume:
+                    fish_quantity = int(free_space / ItemDefs.Fish.volume)
+                    end_of_space = True
+                
+                fish_weight = fish_quantity * ItemDefs.Fish.weight
+                free_space = ship.floatage - ship.weight
+                if free_space < fish_weight:
+                    fish_quantity = int(free_space / ItemDefs.Fish.volume)
+                    end_of_space = True
 
-            if (ship.storage.get_amount(ItemDefs.Fish) >= self.target_quantity):
+                extraction_quantity = fish_quantity * ItemDefs.Fish.weight
+                self.site.reserve -= extraction_quantity
+                ship.push(ItemDefs.Fish, fish_quantity)
+
+            if end_of_space or (self.target_quantity > 0 and (ship.get_amount(ItemDefs.Fish) >= self.target_quantity)):
                 self.finished = True
                 ship.moving_state = MovingState.Idle
                 ship.detach(self.site)

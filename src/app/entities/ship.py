@@ -14,6 +14,7 @@ from app.utils import xy
 from app.defs.enums import MovingState, ObjectType
 from .anchor_point import AnchorPoint
 from app.defs.consts import HungerCycle, EnvironmentSpeedFactor
+from .ship_hull import ShipHull
 
 
 class Position:
@@ -37,24 +38,6 @@ class Position:
     def distance_to(self, x: float, y: float) -> float:
         return xy.distance(self.x, self.y, x, y)
 
-class Hull:
-    def __init__(self):
-        self.hp: int = 0
-        self.weight: float = 0.0
-        self.floatage: float = 0.0
-
-    def to_dict(self):
-        return {
-            'hp': self.hp,
-            'weight': self.weight,
-            'floatage': self.floatage
-        }
-
-    def from_dict(self, data: dict[str, any]):
-        self.hp = data.get('hp', 0)
-        self.weight = data.get('weight', 0.0)
-        self.floatage = data.get('floatage', 0.0)
-
 class ShipEntity:
     def __init__(self, id: int = 0, name: str = ''):
         self.id: int = id
@@ -65,12 +48,14 @@ class ShipEntity:
         self.hunger: float = 0.0
         self.name: str = name
         self.modules: list[BaseShipModule] = []
-        self.hull = Hull()
+        self.hull = ShipHull()
         self.pos = Position()
         self.command_queue = CommandQueue(self)
         self._state: MovingState = MovingState.Idle
         self.attached_to_id: Optional[int] = None
         self.attached_to_type: Optional[ObjectType] = None
+        self._locked_in_slots: int = 0
+        self._locked_ex_slots: int = 0
 
     @property
     def moving_state(self) -> MovingState:
@@ -128,24 +113,44 @@ class ShipEntity:
     def add_module(self, module: BaseShipModule):
         self.modules.append(module)
         module.attached(self)
+        self._locked_in_slots += module.in_slots
+        self._locked_ex_slots += module.ex_slots
 
     def remove_module(self, module: BaseShipModule):
         self.modules.remove(module)
+        self._locked_in_slots -= module.in_slots
+        self._locked_ex_slots -= module.ex_slots
         module.detached()
+
+    @property
+    def in_slots(self) -> int:
+        return self._locked_in_slots
+
+    @property
+    def ex_slots(self) -> int:
+        return self._locked_ex_slots
 
     @property
     def weight(self) -> float:
         weight = self.storage.get_total_mass()
         weight += self.get_net(NetworkResource.Weight).value
-        return weight + self.hull.weight
+        return weight + self.hull.get_weight()
 
     @property
     def hp(self) -> int:
-        return self.get_net(NetworkResource.HP).value + self.hull.hp
+        return self.get_net(NetworkResource.HP).value + self.hull.get_health()
 
     @property
     def floatage(self) -> int:
-        return self.get_net(NetworkResource.Floatage).value + self.hull.floatage
+        return self.hull.get_floatage()
+
+    @property
+    def volume(self) -> float:
+        return self.storage.get_total_volume()
+
+    @property
+    def max_volume(self) -> float:
+        return self.hull.get_volume(self.in_slots, self.ex_slots)
 
     @property
     def max_speed(self) -> float:

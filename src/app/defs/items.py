@@ -6,12 +6,29 @@ import enum
 class StorageItemType:
     name: str
     weight: float
+    volume: float
 
 
-MEAL = StorageItemType('Meal', 0.5)
-EMPTY_BARREL = StorageItemType('EmptyBarrel', 10)
-FUEL_BARREL = StorageItemType('FuelBarrel', 100 + EMPTY_BARREL.weight)
-Fish = StorageItemType('Fish', 1)
+MEAL = StorageItemType(
+    name='Meal', 
+    weight=0.5,
+    volume=0.0002
+)
+EMPTY_BARREL = StorageItemType(
+    name='EmptyBarrel', 
+    weight=10,
+    volume=0.2
+)
+FUEL_BARREL = StorageItemType(
+    name='FuelBarrel', 
+    weight=100 + EMPTY_BARREL.weight,
+    volume=EMPTY_BARREL.volume
+)
+Fish = StorageItemType(
+    name='Fish', 
+    weight=5,
+    volume=0.005
+)
 
 
 MAP = {
@@ -27,5 +44,4 @@ class NetworkResource(enum.StrEnum):
     Thrust = 'thr'
     Weight = 'wght'
     HP = 'hp'
-    Floatage = 'float'
     HarvestingFish = 'har_fish'

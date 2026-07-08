@@ -10,6 +10,9 @@ class Storage:
     def get_total_mass(self) -> float:
         return sum(item.weight * qty for item, qty in self._contents.items())
 
+    def get_total_volume(self) -> float:
+        return sum(item.volume * qty for item, qty in self._contents.items())
+
     def push(self, item_type: StorageItemType, amount: int) -> None:
         if amount <= 0: return
         self._contents[item_type] = self._contents.get(item_type, 0) + amount

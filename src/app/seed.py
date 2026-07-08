@@ -60,9 +60,7 @@ async def seed_world(
     ship.name = 'Blue Shrimp'
 
     # Создаем модули корабля
-    ship.hull.hp = 1000
-    ship.hull.weight = 3000
-    ship.hull.floatage = 6000
+    ship.hull.size = 1
     
     ship.add_module(ModuleFactory.create(ModuleDefs.BaseGenerator.name, ship.get_counter(), active=True))
     ship.add_module(ModuleFactory.create(ModuleDefs.BaseEngine.name, ship.get_counter(), active=True))

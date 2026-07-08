@@ -40,6 +40,8 @@ class ShipStateOut(EntityState):
     moving_state: MovingState
     attached_to_id: Optional[int]
     attached_to_type: Optional[ObjectType]
+    max_volume: float
+    volume: float
 
     @classmethod
     def from_entity(cls, ship: ShipEntity) -> 'ShipStateOut':
@@ -60,5 +62,7 @@ class ShipStateOut(EntityState):
             command=ShipCommandOut.from_entity(current_command) if current_command else None,
             moving_state=ship.moving_state,
             attached_to_id=ship.attached_to_id,
-            attached_to_type=ship.attached_to_type
+            attached_to_type=ship.attached_to_type,
+            max_volume=ship.max_volume,
+            volume=ship.volume
         )

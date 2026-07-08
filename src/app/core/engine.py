@@ -120,7 +120,7 @@ class Engine(World):
         except (KeyboardInterrupt, asyncio.CancelledError):
             logger.info('Остановка симуляции')
         except Exception as e:
-            logger.exception()
+            logger.exception('Краш игрового цикла')
         finally:
             self.is_running = False
             logger.info("Сохраняем прогресс...")

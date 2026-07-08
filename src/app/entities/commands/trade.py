@@ -84,6 +84,16 @@ class TradeCommand(BaseCommand):
                                 left = have
                             else:
                                 left = min(left, have)
+                        else: # Корректируем покупку под имеющийся объем и плавучесть
+                            purchase_volume = item_type.volume * left
+                            free_space = ship.max_volume - ship.volume
+                            if free_space < purchase_volume:
+                                left = int(free_space / item_type.volume)
+                            
+                            purchase_width = item_type.weight * left
+                            free_space = ship.floatage - ship.weight
+                            if free_space < purchase_width:
+                                left = int(free_space / item_type.weight)
 
                         for order in orders:
                             if left <= 0:

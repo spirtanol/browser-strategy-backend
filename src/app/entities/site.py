@@ -22,14 +22,14 @@ class SiteEntity(AnchorPoint):
         if self.restriction.max_reserve <= 0:
             return self.restriction.min_efficiency
 
-        fill_ratio = self.reserve / self.restriction.max_reserve
+        fill_ratio = self.reserve / (self.restriction.max_reserve * self.restriction.max_efficiency_threshold)
         fill_ratio = max(0.0, min(1.0, fill_ratio))
 
         efficiency_range = self.restriction.max_efficiency - self.restriction.min_efficiency
         return self.restriction.min_efficiency + efficiency_range * fill_ratio
 
     def update(self, dt: float):
-        recovery = self.restriction.recovery_rate * dt / SiteRecoveryCycle
+        recovery = self.restriction.recovery_rate * (dt / SiteRecoveryCycle)
         self.reserve = min(self.restriction.max_reserve, self.reserve + recovery)
 
     def get_type(self) -> ObjectType:

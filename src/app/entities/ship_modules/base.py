@@ -41,6 +41,14 @@ class BaseShipModule:
         instance.load_state(data)
         return instance
 
+    @property
+    def in_slots(self) -> int:
+        return self.module_def.in_slots
+    
+    @property
+    def ex_slots(self) -> int:
+        return self.module_def.ex_slots
+
     def load_state(self, state: dict[str, any]):
         self.id = state.get('id', 0)
         self._hp = state.get('hp', self.module_def.hp)

@@ -53,7 +53,7 @@ class ClientShipService:
                         await self._state_pusher.keep_alive_ship(id)
                         last_keep_alive = now
         except Exception as e:
-            logger.exception()
+            logger.exception('Ошибка при получении данных корабля из ядра')
         finally:
             _alive_ships[id] -= 1
             if _alive_ships[id] == 0:

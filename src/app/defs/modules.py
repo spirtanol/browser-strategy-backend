@@ -7,6 +7,8 @@ class ModuleDef:
     name: str
     weight: float
     hp: int
+    in_slots: int
+    ex_slots: int
 
 @dataclass
 class GeneratorModuleDef(ModuleDef):
@@ -29,7 +31,9 @@ BaseEngine = EngineModuleDef(
     weight=750, 
     hp=100, 
     fuel_consumption=5, 
-    thrust=6000
+    thrust=6000,
+    in_slots=1,
+    ex_slots=0
 )
 
 BaseGenerator = GeneratorModuleDef(
@@ -37,7 +41,9 @@ BaseGenerator = GeneratorModuleDef(
     weight=750, 
     hp=100, 
     fuel_consumption=1, 
-    output=100
+    output=100,
+    in_slots=1,
+    ex_slots=0
 )
 
 FishNet = HarvesterModuleDef(
@@ -45,8 +51,10 @@ FishNet = HarvesterModuleDef(
     weight=500.0, 
     hp=200, 
     energy_consumption=30.0,
-    harvest_power=3.0,
-    resource_type=SiteContent.Fish
+    harvest_power=3000.0,
+    resource_type=SiteContent.Fish,
+    in_slots=0,
+    ex_slots=2
 )
 
 MAP = {
