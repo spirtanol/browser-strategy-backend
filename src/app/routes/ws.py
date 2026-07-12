@@ -12,7 +12,7 @@ from fastapi import (
 )
 
 from app.bootstrap.container import get_context_container
-from app.core.exceptions import ShipNotFound, AuthError
+from app.core.exceptions import ShipNotFoundError, AuthError
 from app.schemas.ship import ShipStateOut
 from app.schemas.commands import GameCommandRequest, GameCommand
 from .deps import get_ws_user, UserEntity
@@ -37,7 +37,7 @@ def create_ws_router(prefix: str, tags: list[str]):
                 async with container.transaction():
                     ship = await container.client_ship_service.find(ship_id)
                     if ship is None:
-                        raise ShipNotFound(ship_id)
+                        raise ShipNotFoundError(ship_id)
                     
                     if ship.owner_id != user.id:
                         raise AuthError()

@@ -3,6 +3,7 @@ from typing import Optional
 from app.core.exceptions import ServiceNotLoadedError
 from app.repositories.platform import PlatformRepository
 from app.entities.platform import PlatformEntity
+from app.entities.world import World
 
 
 class CorePlatformService:
@@ -13,9 +14,12 @@ class CorePlatformService:
         self.repository = platform_repo
         self._identity_map: dict[int, PlatformEntity] = None
 
-    async def load(self):
+    async def load(self, world: World):
         entities = await self.repository.get_all()
-        self._identity_map = {ent.id: ent for ent in entities}
+        self._identity_map = {}
+        for entity in entities:
+            entity.bind_to_world(world)
+            self._identity_map[entity.id] = entity
 
     def get_all(self) -> list[PlatformEntity]:
         return self._identity_map.values()

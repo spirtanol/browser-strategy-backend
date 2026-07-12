@@ -25,9 +25,13 @@ from app.mappers.ship import ShipMapper
 from app.mappers.user import UserMapper
 from app.mappers.platform import PlatformMapper
 from app.mappers.site import SiteMapper
+from app.mappers.fleet import FleetMapper
 from app.services.user.action import UserService, UserRepository
 from app.services.user.core import CoreUserService
 from app.services.user.client import ClientUserService
+from app.services.fleet.core import CoreFleetService, FleetRepository
+from app.services.fleet.action import FleetService
+from app.services.fleet.client import ClientFleetService
 from app.services.market import MarketService, MarketOrderRepository
 
 
@@ -57,6 +61,40 @@ class Container:
             secret_key=self.config.secret_key,
             token_alg=self.config.token_alg
         )
+
+    @cached_property
+    def fleet_mapper(self):
+        return FleetMapper()
+
+    @cached_property
+    def fleet_repository(self):
+        return FleetRepository(
+            session_factory=self.get_session,
+            mapper=self.fleet_mapper
+        )
+
+    @cached_property
+    def core_fleet_service(self):
+        return CoreFleetService(
+            repository=self.fleet_repository,
+            life_state_registry=self.life_state_registry,
+            redis_factory=self.get_redis,
+            fleet_mapper=self.fleet_mapper,
+            ship_service=self.core_ship_service
+        )
+
+    @cached_property
+    def client_fleet_service(self):
+        return ClientFleetService(
+            fleet_repository=self.fleet_repository,
+            redis_factory=self.get_redis,
+            life_state_pusher=self.life_state_pusher,
+            fleet_mapper=self.fleet_mapper
+        )
+    
+    @cached_property
+    def fleet_service(self):
+        return FleetService(fleet_repo=self.fleet_repository)
 
     @cached_property
     def site_mapper(self) -> SiteMapper:

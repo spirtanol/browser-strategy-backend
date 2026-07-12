@@ -29,7 +29,7 @@ async def _run():
         engine = Engine(
             dt_multiplier=config.dt_multiplier, 
             tick_duration=config.tick_duration, 
-            ship_service=container.core_ship_service,
+            fleet_service=container.core_fleet_service,
             user_service=container.core_user_service,
             platform_service=container.core_platform_service,
             site_service=container.core_site_service,

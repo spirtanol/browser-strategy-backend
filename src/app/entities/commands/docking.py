@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Any
 
 from .base import BaseCommand
 from .factory import register_command
@@ -8,10 +8,6 @@ import app.defs.consts as Consts
 from ..world import World
 from app.utils import xy
 from app.defs.enums import MovingState
-
-if TYPE_CHECKING:
-    from ..ship import ShipEntity
-    from ..platform import PlatformEntity
 
 
 @register_command()
@@ -25,25 +21,27 @@ class DockingCommand(BaseCommand):
         self.docking_progress: float = 0.0
         self.stage = 0
 
-    def to_dict(self) -> dict[str, any]:
+    def to_dict(self) -> dict[str, Any]:
         data = super().to_dict()
         data['platform_id'] = self.platform_id
         data['progress'] = self.docking_progress
         return data
 
-    def from_dict(self, data: dict[str, any]):
+    def from_dict(self, data: dict[str, Any]):
         super().from_dict(data)
         self.platform_id = data.get('platform_id', 0)
         self.docking_progress = data.get('progress', 0.0)
 
-    def get_platform(self, world: World) -> Optional[PlatformEntity]:
+    def get_platform(self) -> Optional[PlatformEntity]:
         if self.platform is None:
-            self.platform = world.find_platform(self.platform_id)
+            self.platform = self.world.find_platform(self.platform_id)
         return self.platform
 
-    def update(self, ship: ShipEntity, dt: float, world: World):
+    def update(self):
         if self.finished:
             return
+
+        fleet = self.fleet
 
         match self.stage:
             case 0:
@@ -52,28 +50,28 @@ class DockingCommand(BaseCommand):
                     self.finished = True
                     return
                 
-                distance = xy.distance(ship.pos.x, ship.pos.y, platform.x, platform.y)
+                distance = xy.distance(fleet.pos.x, fleet.pos.y, platform.x, platform.y)
                 if distance > Consts.ObjectRadius:
                     move_command = MoveToObjectCommand(self.platform_id, ObjectType.Platform)
-                    move_command.is_dependend = True
-                    ship.command_queue.add(move_command, True)
+                    move_command.is_dependent = True
+                    fleet.command_queue.add(move_command, True)
                 else:
                     self.stage = 1
             case 1:
-                if ship.moving_state == MovingState.Docked:
+                if fleet.moving_state == MovingState.Docked:
                     self.finished = True
                     platform = self.get_platform(world)
-                    ship.attach_to(platform)
+                    fleet.attach_to(platform)
                     return
 
-                ship.moving_state = MovingState.Maneuvering
+                fleet.moving_state = MovingState.Maneuvering
                 self.docking_progress += (dt / Consts.DockingTime)
                 if self.docking_progress >= 1.0:
-                    ship.moving_state = MovingState.Docked
-                    platform = self.get_platform(world)
-                    ship.attach_to(platform)
+                    fleet.moving_state = MovingState.Docked
+                    platform = self.get_platform()
+                    fleet.attach_to(platform)
                     self.finished = True
 
-    def cancel(self, ship: ShipEntity):
-        if ship.moving_state == MovingState.Maneuvering:
-            ship.moving_state = MovingState.Idle
+    def cancel(self):
+        if self.fleet.moving_state == MovingState.Maneuvering:
+            self.fleet.moving_state = MovingState.Idle

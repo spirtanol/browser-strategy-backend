@@ -1,11 +1,15 @@
-from typing import Protocol
+from .base import MapEntity
 
-from app.defs.enums import ObjectType
+class AnchorPointEntity(MapEntity):
+    def __init__(self):
+        super().__init__()
+        self.attached: set[int] = set()
 
+    def attach(self, id: int) -> None:
+        self.attached.add(id)
 
-class AnchorPoint(Protocol):
-    def get_id(self) -> int: ...
-    def attach_ship(self, ship_id: int) -> None: ...
-    def detach_ship(self, ship_id: int) -> None: ...
-    def get_type(self) -> ObjectType: ...
-    def get_anchored(self) -> set[int]: ...
+    def detach(self, id: int) -> None:
+        self.attached.remove(id)
+
+    def get_anchored(self) -> set[int]:
+        return self.attached

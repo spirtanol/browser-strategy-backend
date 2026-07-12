@@ -1,22 +1,22 @@
 from typing import Literal
 
-from .base import ShipTargeted
+from .base import FleetTargeted
 from app.entities.world import World
 
 
-class CancelCommandParams(ShipTargeted):
+class CancelCommandParams(FleetTargeted):
     scope: Literal['current', 'last', 'all'] = 'all'
 
 def cancel_command(world: World, params: CancelCommandParams):
-    ship = world.find_ship(params.ship_id)
+    fleet = world.find_fleet(params.fleet_id)
     
-    if ship is None:
+    if fleet is None:
         return
 
     match params.scope:
         case 'current':
-            ship.command_queue.pop_current()
+            fleet.command_queue.pop_current()
         case 'last':
-            ship.command_queue.pop_last()
+            fleet.command_queue.pop_last()
         case 'all':
-            ship.command_queue.cancel_all()
+            fleet.command_queue.cancel_all()

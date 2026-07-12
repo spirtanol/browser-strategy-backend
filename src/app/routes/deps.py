@@ -3,7 +3,7 @@ import logging
 
 from app.bootstrap.container import get_context_container
 from app.entities.user import UserEntity
-from app.core.exceptions import UserNotFound, AuthError
+from app.core.exceptions import AuthError
 
 
 logger = logging.getLogger("app.core.engine")

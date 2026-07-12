@@ -4,6 +4,7 @@ from app.core.exceptions import ServiceNotLoadedError
 from app.repositories.site import SiteRepository
 from app.mappers.site import SiteMapper
 from app.entities.site import SiteEntity
+from app.entities.world import World
 
 
 class CoreSiteService:
@@ -14,9 +15,12 @@ class CoreSiteService:
         self.repository = site_repo
         self._identity_map: dict[int, SiteEntity] = None
 
-    async def load(self):
+    async def load(self, world: World):
         entities = await self.repository.get_all()
-        self._identity_map = {ent.id: ent for ent in entities}
+        self._identity_map = {}
+        for entity in entities:
+            entity.bind_to_world(world)
+            self._identity_map[entity.id] = entity
 
     def get_all(self) -> list[SiteEntity]:
         return self._identity_map.values()

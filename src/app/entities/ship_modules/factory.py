@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, Type, TYPE_CHECKING
+from typing import Optional, Type, TYPE_CHECKING, Any
 
 from .base import BaseShipModule
 import app.defs.modules as ModuleDefs
@@ -16,7 +16,7 @@ def register_module(def_name: str):
         return cls
     return wrapper
 
-def load(def_name: str, data: dict[str, any]) -> BaseShipModule:
+def load(def_name: str, data: dict[str, Any]) -> BaseShipModule:
     module_def = ModuleDefs.MAP.get(def_name, None)
     module_class = _MAP.get(def_name, None)
 

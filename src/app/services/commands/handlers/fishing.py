@@ -1,16 +1,18 @@
-from .base import ShipCommand
+from pydantic import Field
+
+from .base import FleetCommand
 from app.entities.world import World
-from app.entities.commands.fishing import FishingCommand
+from app.entities.commands.fishing import FishingCommand, FillLimit
 
 
-class FishingCommandParams(ShipCommand):
+class FishingCommandParams(FleetCommand):
     site_id: int
-    target_quantity: int
+    fill_limmits: list[FillLimit] = Field(min_length=1)
 
 def fishing_command(world: World, params: FishingCommandParams):
-    ship = world.find_ship(params.ship_id)
+    fleet = world.find_fleet(params.fleet_id)
 
-    if ship is None:
+    if fleet is None:
         return
 
     site = world.find_site(params.site_id)
@@ -19,6 +21,6 @@ def fishing_command(world: World, params: FishingCommandParams):
         return
 
     if params.clear_queue:
-        ship.command_queue.cancel_all()
+        fleet.command_queue.cancel_all()
     
-    ship.command_queue.add(FishingCommand(site_id=params.site_id, target_quantity=params.target_quantity), params.on_top)
+    fleet.command_queue.add(FishingCommand(site_id=params.site_id, target_quantity=params.target_quantity), params.on_top)

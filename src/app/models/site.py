@@ -1,4 +1,5 @@
 import enum
+from typing import Any
 
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import JSON, Float, Integer
@@ -16,7 +17,7 @@ class SiteModel(BaseModel):
     y: Mapped[float] = mapped_column(Float, nullable=False)
     site_type: Mapped[SiteType] = mapped_column(Integer, nullable=False, index=True, default=SiteType.STABLE)
     site_content: Mapped[SiteContent] = mapped_column(Integer, nullable=False, index=True)
-    state: Mapped[dict[str, any]] = mapped_column(
+    state: Mapped[dict[str, Any]] = mapped_column(
         MutableDict.as_mutable(JSON),
         default=dict, 
         nullable=False,

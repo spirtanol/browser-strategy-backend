@@ -1,17 +1,17 @@
-from .base import ShipCommand
+from .base import FleetCommand
 from app.entities.world import World
 from app.entities.commands.move_to_object import MoveToObjectCommand
 from app.defs.enums import ObjectType
 
 
-class MoveToObjectCommandParams(ShipCommand):
+class MoveToObjectCommandParams(FleetCommand):
     obj_id: int
     obj_type: ObjectType
 
 def move_to_object_command(world: World, params: MoveToObjectCommandParams):
-    ship = world.find_ship(params.ship_id)
+    fleet = world.find_fleet(params.fleet_id)
 
-    if ship is None:
+    if fleet is None:
         return
 
     x = None
@@ -27,6 +27,6 @@ def move_to_object_command(world: World, params: MoveToObjectCommandParams):
             return
 
     if params.clear_queue:
-        ship.command_queue.cancel_all()
+        fleet.command_queue.cancel_all()
         
-    ship.command_queue.add(MoveToObjectCommand(obj_id=params.obj_id, obj_type=params.obj_type), params.on_top)
+    fleet.command_queue.add(MoveToObjectCommand(obj_id=params.obj_id, obj_type=params.obj_type), params.on_top)

@@ -1,22 +1,24 @@
+from typing import Any
+
+from .anchor_point import AnchorPointMapper
 from app.entities.platform import PlatformEntity
 from app.models.platform import PlatformModel
 
 
-class PlatformMapper:
-    def _dump_state(self, entity: PlatformEntity) -> dict[str, any]:
-        return {
-            'c': entity.counter,
-            'storage': entity.storage.to_dict(),
-            'attached_ships': list(entity.attached_ships)
-        }
+class PlatformMapper(AnchorPointMapper):
+    def _dump_state(self, entity: PlatformEntity) -> dict[str, Any]:
+        state_data = super()._dump_state(entity)
+        state_data['c'] = entity.counter
+        state_data['storage'] = entity.storage.to_dict()
+        return state_data
 
-    def _load_state(self, entity: PlatformEntity, data: dict[str, any]):
+    def _load_state(self, entity: PlatformEntity, data: dict[str, Any]):
+        super()._load_state(entity, data)
         entity.counter = data.get('c', 0)
         entity.storage.from_dict(data.get('storage', {}))
-        entity.attached_ships = set(data.get('attached_ships', []))
         entity.modules = []
 
-    def to_dict(self, entity: PlatformEntity) -> dict[str, any]:
+    def to_dict(self, entity: PlatformEntity) -> dict[str, Any]:
         data = self._dump_state(entity)
         data['id'] = entity.id
         data['name'] = entity.name
@@ -24,7 +26,7 @@ class PlatformMapper:
         data['xy'] = [entity.x, entity.y]
         return data
 
-    def from_dict(self, data: dict[str, any]) -> PlatformEntity:
+    def from_dict(self, data: dict[str, Any]) -> PlatformEntity:
         entity = PlatformEntity()
         entity.id = data.get('id', 0)
         entity.name = data.get('name', '')
@@ -43,7 +45,7 @@ class PlatformMapper:
         self._load_state(entity, model.state)
         return entity
 
-    def to_model_data(self, entity: PlatformEntity) -> dict[str, any]:
+    def to_model_data(self, entity: PlatformEntity) -> dict[str, Any]:
         data = {
             'name': entity.name,
             'state': self._dump_state(entity),

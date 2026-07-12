@@ -1,4 +1,4 @@
-from typing import Type
+from typing import Type, Any
 
 from .base import BaseCommand
 
@@ -14,7 +14,7 @@ def register_command():
         return cls
     return wrapper
 
-def load(command_name: str, data: dict[str, any]) -> BaseCommand:
+def load(command_name: str, data: dict[str, Any]) -> BaseCommand:
     command_class = _MAP.get(command_name, None)
 
     if not command_class:

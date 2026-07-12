@@ -1,15 +1,15 @@
-from .base import ShipCommand
+from .base import FleetCommand
 from app.entities.world import World
 from app.entities.commands.docking import DockingCommand
 
 
-class DockToPlatformCommandParams(ShipCommand):
+class DockToPlatformCommandParams(FleetCommand):
     platform_id: int
 
 def dock_to_platform_command(world: World, params: DockToPlatformCommandParams):
-    ship = world.find_ship(params.ship_id)
+    fleet = world.find_fleet(params.fleet_id)
 
-    if ship is None:
+    if fleet is None:
         return
 
     x = None
@@ -20,6 +20,6 @@ def dock_to_platform_command(world: World, params: DockToPlatformCommandParams):
         return
 
     if params.clear_queue:
-        ship.command_queue.cancel_all()
+        fleet.command_queue.cancel_all()
         
-    ship.command_queue.add(DockingCommand(platform_id=params.platform_id), params.on_top)
+    fleet.command_queue.add(DockingCommand(platform_id=params.platform_id), params.on_top)

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from .base import BaseShipModule, UpdatePhase
 from app.defs.modules import EngineModuleDef, BaseEngine
@@ -27,13 +27,13 @@ class EngineModule(BaseShipModule):
         self.fuel: float = 0.0
         self.active: bool = active
 
-    def to_dict(self) -> dict[str, any]:
+    def to_dict(self) -> dict[str, Any]:
         data = super().to_dict()
         data['fuel'] = self.fuel
         data['active'] = self.active
         return data
 
-    def load_state(self, data: dict[str, any]):
+    def load_state(self, data: dict[str, Any]):
         super().load_state(data)
         self.fuel = data.get('fuel', 0.0)
         self.active = data.get('active', True)
