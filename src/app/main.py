@@ -38,15 +38,6 @@ async def _run():
             market_service=container.market_service
         )
 
-        def alive_handler(message):
-            ename, id = message['data'].split(':')
-            id = int(id)
-            match ename:
-                case 'ship':
-                    container.life_state_registry.add_ship(id)
-                case 'user':
-                    container.life_state_registry.add_user(id)
-
         def command_handler(message):
             async def _handler():
                 try:
@@ -61,7 +52,7 @@ async def _run():
         subscriber = redis_client.pubsub()
         await subscriber.subscribe(
             commands=command_handler,
-            alive=alive_handler
+            alive=container.life_state_registry.alive_handler
         )
 
         async def message_loop():

@@ -49,9 +49,9 @@ class EngineModule(BaseShipModule):
             elif phase == UpdatePhase.Execution:
                 cdt = dt / DayLenght
                 consumption = 0
-                if self.ship.moving_state == MovingState.Move:
+                if self.ship.fleet.moving_state == MovingState.Move:
                     consumption = cdt * self.__def.fuel_consumption
-                elif self.ship.moving_state in (MovingState.Maneuvering, MovingState.Fishing):
+                elif self.ship.fleet.moving_state in (MovingState.Maneuvering, MovingState.Fishing):
                     consumption = cdt * self.__def.fuel_consumption * 0.5
                     
                 if consumption > 0:

@@ -2,11 +2,12 @@
 <html>
     <head>
         <meta charset="UTF-8">
-        <title>Ship Debug Control</title>
+        <title>Fleet Debug Control</title>
         <style>
             body { font-family: monospace; background: #1e1e1e; color: #d4d4d4; display: flex; flex-direction: column; gap: 20px; padding: 20px; }
-            .auth-panel { background: #252526; padding: 15px; border-radius: 5px; border: 1px solid #333; display: flex; gap: 10px; align-items: center; }
-            .auth-panel input { flex-grow: 1; background: #1e1e1e; color: #fff; border: 1px solid #555; padding: 8px; border-radius: 3px; font-family: monospace; }
+            .auth-panel { background: #252526; padding: 15px; border-radius: 5px; border: 1px solid #333; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+            .auth-panel input[type="text"] { flex-grow: 1; background: #1e1e1e; color: #fff; border: 1px solid #555; padding: 8px; border-radius: 3px; font-family: monospace; }
+            .auth-panel input[type="number"] { width: 80px; background: #1e1e1e; color: #fff; border: 1px solid #555; padding: 8px; border-radius: 3px; font-family: monospace; text-align: center; }
             .main-content { display: flex; gap: 20px; flex-grow: 1; }
             .column { flex: 1; display: flex; flex-direction: column; gap: 10px; }
             
@@ -26,13 +27,17 @@
         <div class="auth-panel">
             <strong>Access Token:</strong>
             <input type="text" id="tokenInput" placeholder="Вставьте ваш JWT токен сюда...">
+            
+            <strong>Fleet ID:</strong>
+            <input type="number" id="fleetIdInput" value="1" min="1">
+
             <button id="connectBtn">Подключиться</button>
         </div>
 
         <div class="main-content">
             <!-- Левая колонка с мониторами состояния -->
             <div class="column">
-                <strong>Live State (Ship ID: 1):</strong>
+                <strong id="fleetTitle">Live State (Fleet ID: 1):</strong>
                 <pre id="display" class="monitor">Waiting for connection and token...</pre>
 
                 <strong>User State:</strong>
@@ -49,26 +54,41 @@
         </div>
 
         <script>
-            const shipId = 1; 
             let ws = null;
 
             const tokenInput = document.getElementById('tokenInput');
+            const fleetIdInput = document.getElementById('fleetIdInput');
             const connectBtn = document.getElementById('connectBtn');
+            const fleetTitle = document.getElementById('fleetTitle');
             const display = document.getElementById('display');
             const userDisplay = document.getElementById('userDisplay');
             const cmdInput = document.getElementById('cmdInput');
             const sendBtn = document.getElementById('sendBtn');
             const log = document.getElementById('log');
 
-            cmdInput.value = `{"action": "act_name", "params": {"ship_id": ${shipId}}}`;
+            // Обновление только текстового заголовка на экране
+            function updateFleetTitle() {
+                const currentId = fleetIdInput.value.trim() || "1";
+                fleetTitle.textContent = `Live State (Fleet ID: ${currentId}):`;
+            }
+
+            // Устанавливаем дефолтное значение JSON-шаблона ОДИН раз при загрузке страницы
+            const initialId = fleetIdInput.value.trim() || "1";
+            cmdInput.value = `{"action": "act_name", "params": {"fleet_id": ${initialId}}}`;
+            updateFleetTitle();
+
+            // Следим за изменением ID в инпуте (обновляем только заголовок)
+            fleetIdInput.oninput = () => {
+                updateFleetTitle();
+            };
 
             // Функция инициализации сокета
-            function connectWebSocket(token) {
+            function connectWebSocket(token, fleetId) {
                 if (ws) {
                     ws.close();
                 }
 
-                const wsUrl = `ws://localhost:4000/ws/${shipId}?token=${encodeURIComponent(token)}`;
+                const wsUrl = `ws://localhost:4000/ws/${fleetId}?token=${encodeURIComponent(token)}`;
                 ws = new WebSocket(wsUrl);
 
                 // Прием данных
@@ -79,7 +99,7 @@
                         // Проверяем верхний уровень
                         if (data.out_type === 'entity') {
                             // Маршрутизация по entity_type
-                            if (data.entity_type === 'ship') {
+                            if (data.entity_type === 'fleet') {
                                 display.textContent = JSON.stringify(data, null, 2);
                             } else if (data.entity_type === 'user') {
                                 userDisplay.textContent = JSON.stringify(data, null, 2);
@@ -91,7 +111,7 @@
                 };
 
                 ws.onopen = () => {
-                    log.textContent = "Соединение установлено и авторизовано";
+                    log.textContent = `Соединение установлено (Флотилия ${fleetId}) и авторизовано`;
                     log.style.color = "#888";
                     sendBtn.disabled = false;
                 };
@@ -115,12 +135,19 @@
             // Логика кнопки подключения
             connectBtn.onclick = () => {
                 const token = tokenInput.value.trim();
+                const fleetId = fleetIdInput.value.trim();
+
                 if (!token) {
                     alert("Пожалуйста, введите токен!");
                     return;
                 }
-                log.textContent = "Установка соединения...";
-                connectWebSocket(token);
+                if (!fleetId) {
+                    alert("Пожалуйста, укажите ID флотилии!");
+                    return;
+                }
+
+                log.textContent = `Установка соединения для флотилии ${fleetId}...`;
+                connectWebSocket(token, fleetId);
             };
 
             // Отправка команды

@@ -66,9 +66,9 @@ class Engine(World):
 
         async with self.transaction_manager():
             await self.user_service.load()
-            await self.fleet_service.load()
-            await self.platform_service.load()
-            await self.site_service.load()
+            await self.fleet_service.load(self)
+            await self.platform_service.load(self)
+            await self.site_service.load(self)
 
         last_tick_time = time.perf_counter()
         last_save_time = last_tick_time
@@ -80,7 +80,7 @@ class Engine(World):
 
                 fleets = self.fleet_service.get_all()
                 for fleet in fleets:
-                    fleet.update(dt, self)
+                    fleet.update(dt)
                 
                 if len(self._async_actions) > 0:
                     async with self.transaction_manager():

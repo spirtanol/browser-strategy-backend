@@ -7,22 +7,24 @@ from app.entities.commands.base import BaseCommand
 from .common import EntityState
 
 
-class Position(BaseModel):
-    x: float
-    y: float
-
-class ShipCommandOut(BaseModel):
+class ShipShortInfoOut(BaseModel):
+    id: int
     name: str
-    state: dict[str, str | int | float | list | None | MovingState | ObjectType, dict, MarketOrderType]
+    hunger: float
+    crew: int
+    max_speed: float
 
     @classmethod
-    def from_entity(cls, command: BaseCommand):
+    def from_entity(cls, ship: ShipEntity) -> "ShipShortInfo":
         return cls(
-            name=command.name,
-            state=command.to_dict()
+            id=ship.id,
+            name=ship.name,
+            hunger=ship.hunger,
+            crew=ship.crew,
+            max_speed=ship.max_speed
         )
 
-class ShipStateOut(EntityState):
+class ShipDetailInfoOut(EntityState):
     entity_type: Literal['ship'] = 'ship'
 
     id: int
@@ -34,12 +36,7 @@ class ShipStateOut(EntityState):
     floatage: int
     hp: int
     power: tuple[float, float]
-    position: Position
     max_speed: float
-    command: Optional[ShipCommandOut] = None
-    moving_state: MovingState
-    attached_to_id: Optional[int]
-    attached_to_type: Optional[ObjectType]
     max_volume: float
     volume: float
 
@@ -57,12 +54,7 @@ class ShipStateOut(EntityState):
             floatage=ship.floatage,
             hp=ship.hp,
             power=(ship.get_net(NetworkResource.PowerIn).value, ship.get_net(NetworkResource.PowerOut).value),
-            position=Position(x=ship.pos.x, y=ship.pos.y),
             max_speed=ship.max_speed,
-            command=ShipCommandOut.from_entity(current_command) if current_command else None,
-            moving_state=ship.moving_state,
-            attached_to_id=ship.attached_to_id,
-            attached_to_type=ship.attached_to_type,
             max_volume=ship.max_volume,
             volume=ship.volume
         )

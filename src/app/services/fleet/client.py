@@ -1,14 +1,12 @@
 from logging import Logger
 from typing import Optional, Callable
 import asyncio
-import json
 
 from redis.asyncio import Redis
 
 from app.entities.fleet import FleetEntity
 from app.repositories.fleet import FleetRepository
 from app.services.lifestate.pusher import LifeStatePusher
-from app.mappers.fleet import FleetMapper
 
 
 _alive_fleets: dict[int, int] = {}
@@ -18,18 +16,16 @@ class ClientFleetService:
         self, 
         fleet_repository: FleetRepository,
         redis_factory: Callable[[], Redis],
-        life_state_pusher: LifeStatePusher,
-        fleet_mapper: FleetMapper
+        life_state_pusher: LifeStatePusher
     ):
         self._repo = fleet_repository
         self._redis_factory = redis_factory
         self._state_pusher = life_state_pusher
-        self._mapper = fleet_mapper
 
     async def find(self, id: int) -> Optional[FleetEntity]:
         return await self._repo.find(id)
 
-    async def subscribe_to_updates(self, id: int, logger: Logger) -> FleetEntity:
+    async def subscribe_to_updates(self, id: int, logger: Logger) -> str:
         redis = self._redis_factory()
         subscriber = redis.pubsub()
         channel_name = f'fleet:{id}'
@@ -44,9 +40,7 @@ class ClientFleetService:
         try:
             async for message in subscriber.listen():
                 if message['type'] == 'message':
-                    raw_data = json.loads(message['data'])
-                    
-                    yield self._mapper.from_dict(raw_data)
+                    yield message['data']
 
                     now = asyncio.get_event_loop().time()
                     if now - last_keep_alive > 60:

@@ -19,7 +19,8 @@ class FleetMapper:
         entity.pos.x, entity.pos.y = data.get('pos', [0.0, 0.0])
         entity._move_state = MovingState(data.get('ms', MovingState.Idle))
         entity.attached_to_id = data.get('attached_to_id', None)
-        entity.attached_to_type = ObjectType(data.get('attached_to_type', None))
+        obj_type = data.get('attached_to_type', None)
+        entity.attached_to_type = ObjectType(obj_type) if obj_type else None
 
     def to_dict(self, entity: FleetEntity) -> dict[str, Any]:
         data = self._dump_state(entity)

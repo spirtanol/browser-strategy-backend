@@ -79,7 +79,6 @@ class Container:
             repository=self.fleet_repository,
             life_state_registry=self.life_state_registry,
             redis_factory=self.get_redis,
-            fleet_mapper=self.fleet_mapper,
             ship_service=self.core_ship_service
         )
 
@@ -88,8 +87,7 @@ class Container:
         return ClientFleetService(
             fleet_repository=self.fleet_repository,
             redis_factory=self.get_redis,
-            life_state_pusher=self.life_state_pusher,
-            fleet_mapper=self.fleet_mapper
+            life_state_pusher=self.life_state_pusher
         )
     
     @cached_property
@@ -176,7 +174,6 @@ class Container:
     def core_user_service(self) -> CoreUserService:
         return CoreUserService(
             user_repo=self.user_repository,
-            user_mapper=self.user_mapper,
             life_state_registry=self.life_state_registry,
             redis_factory=self.get_redis
         )
@@ -186,8 +183,7 @@ class Container:
         return ClientUserService(
             user_repository=self.user_repository,
             redis_factory=self.get_redis,
-            life_state_pusher=self.life_state_pusher,
-            user_mapper=self.user_mapper
+            life_state_pusher=self.life_state_pusher
         )
 
     @cached_property
@@ -263,8 +259,8 @@ class Container:
 
         return session
 
-    def get_redis(self) -> Redis:
-        return get_redis(self.config.redis_url)
+    def get_redis(self, decode_responses=True) -> Redis:
+        return get_redis(self.config.redis_url, decode_responses)
 
     @asynccontextmanager
     async def transaction(self):

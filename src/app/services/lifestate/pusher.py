@@ -30,7 +30,7 @@ class LifeStatePusher:
 
     async def keep_alive_fleet(self, id: int):
         redis = self._redis_factory()
-        if await redis.exists(f'a_fleet:{id}'):
+        if await redis.exists(f'a_fleet:{id}') == 0:
             await redis.publish('alive', f'fleet:{id}')
         await redis.set(f'a_fleet:{id}', 1, ex=self._ttl)
 

@@ -1,6 +1,6 @@
-from typing import Optional
+from __future__ import annotations
+from typing import Optional, TYPE_CHECKING
 import math
-import enum
 
 from .storage import Storage, StorageItemType
 from .resources_pool import ResourcesPool
@@ -12,11 +12,15 @@ from app.defs.enums import MovingState
 from app.defs.consts import HungerCycle, EnvironmentSpeedFactor
 from .ship_hull import ShipHull
 
+if TYPE_CHECKING:
+    from .fleet import FleetEntity
+
 
 class ShipEntity:
     def __init__(self, id: int = 0, name: str = ''):
         self.id: int = id
         self.fleet_id: int = 0
+        self.fleet: Optional[FleetEntity] = None
         self.counter: int = 0
         self.storage = Storage()
         self.crew: int = 0
@@ -119,4 +123,4 @@ class ShipEntity:
 
     def moving_state_changed(self, old_state: MovingState, new_state: MovingState):
         for module in self.modules:
-            module.moving_state_changed(old_state, new_state)
+            module.ship_moving_state_changed(old_state, new_state)

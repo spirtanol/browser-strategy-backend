@@ -1,10 +1,7 @@
 from __future__ import annotations
 from typing import Optional, override, TYPE_CHECKING
-import math
-import enum
 
 from .base import MapEntity
-from app.utils.str_helpers import generate_random_string
 from .commands.command_queue import CommandQueue
 from .world import World
 from app.utils import xy
@@ -57,6 +54,7 @@ class FleetEntity(MapEntity):
     def add_ship(self, ship: ShipEntity):
         self.ships[ship.id] = ship
         ship.fleet_id = self.id
+        ship.fleet = self
         ship.moving_state_changed(MovingState.Idle, self.moving_state)
 
     def remove_ship(self, ship: ShipEntity):
