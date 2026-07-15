@@ -8,8 +8,6 @@ from redis.asyncio import Redis
 from app.entities.ship import ShipEntity
 from app.repositories.ship import ShipRepository
 from app.services.lifestate.pusher import LifeStatePusher
-from app.mappers.ship import ShipMapper
-
 
 _alive_ships: dict[int, int] = {}
 
@@ -18,18 +16,16 @@ class ClientShipService:
         self, 
         ship_repository: ShipRepository,
         redis_factory: Callable[[], Redis],
-        life_state_pusher: LifeStatePusher,
-        ship_mapper: ShipMapper
+        life_state_pusher: LifeStatePusher
     ):
         self._ship_repo = ship_repository
         self._redis_factory = redis_factory
         self._state_pusher = life_state_pusher
-        self._ship_mapper = ship_mapper
 
     async def find(self, id: int) -> Optional[ShipEntity]:
         return await self._ship_repo.find(id)
 
-    async def subscribe_to_updates(self, id: int, logger: Logger) -> ShipEntity:
+    async def subscribe_to_updates(self, id: int, logger: Logger) -> str:
         redis = self._redis_factory()
         subscriber = redis.pubsub()
         channel_name = f'ship:{id}'
@@ -44,9 +40,7 @@ class ClientShipService:
         try:
             async for message in subscriber.listen():
                 if message['type'] == 'message':
-                    raw_data = json.loads(message['data'])
-                    
-                    yield self._ship_mapper.from_dict(raw_data)
+                    yield message['data']
 
                     now = asyncio.get_event_loop().time()
                     if now - last_keep_alive > 60:

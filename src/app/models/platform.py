@@ -1,4 +1,5 @@
 import enum
+from typing import Any
 
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import JSON, ForeignKey, Float, String
@@ -13,7 +14,7 @@ class PlatformModel(BaseModel):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     x: Mapped[float] = mapped_column(Float, nullable=False)
     y: Mapped[float] = mapped_column(Float, nullable=False)
-    state: Mapped[dict[str, any]] = mapped_column(
+    state: Mapped[dict[str, Any]] = mapped_column(
         MutableDict.as_mutable(JSON),
         default=dict, 
         nullable=False,

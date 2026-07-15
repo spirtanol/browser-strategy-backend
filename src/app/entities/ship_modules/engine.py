@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from .base import BaseShipModule, UpdatePhase
 from app.defs.modules import EngineModuleDef, BaseEngine
@@ -27,13 +27,13 @@ class EngineModule(BaseShipModule):
         self.fuel: float = 0.0
         self.active: bool = active
 
-    def to_dict(self) -> dict[str, any]:
+    def to_dict(self) -> dict[str, Any]:
         data = super().to_dict()
         data['fuel'] = self.fuel
         data['active'] = self.active
         return data
 
-    def load_state(self, data: dict[str, any]):
+    def load_state(self, data: dict[str, Any]):
         super().load_state(data)
         self.fuel = data.get('fuel', 0.0)
         self.active = data.get('active', True)
@@ -49,9 +49,9 @@ class EngineModule(BaseShipModule):
             elif phase == UpdatePhase.Execution:
                 cdt = dt / DayLenght
                 consumption = 0
-                if self.ship.moving_state == MovingState.Move:
+                if self.ship.fleet.moving_state == MovingState.Move:
                     consumption = cdt * self.__def.fuel_consumption
-                elif self.ship.moving_state in (MovingState.Maneuvering, MovingState.Fishing):
+                elif self.ship.fleet.moving_state in (MovingState.Maneuvering, MovingState.Fishing):
                     consumption = cdt * self.__def.fuel_consumption * 0.5
                     
                 if consumption > 0:

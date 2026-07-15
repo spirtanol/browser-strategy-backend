@@ -29,7 +29,7 @@ async def _run():
         engine = Engine(
             dt_multiplier=config.dt_multiplier, 
             tick_duration=config.tick_duration, 
-            ship_service=container.core_ship_service,
+            fleet_service=container.core_fleet_service,
             user_service=container.core_user_service,
             platform_service=container.core_platform_service,
             site_service=container.core_site_service,
@@ -37,15 +37,6 @@ async def _run():
             save_interval=config.save_interval,
             market_service=container.market_service
         )
-
-        def alive_handler(message):
-            ename, id = message['data'].split(':')
-            id = int(id)
-            match ename:
-                case 'ship':
-                    container.life_state_registry.add_ship(id)
-                case 'user':
-                    container.life_state_registry.add_user(id)
 
         def command_handler(message):
             async def _handler():
@@ -61,7 +52,7 @@ async def _run():
         subscriber = redis_client.pubsub()
         await subscriber.subscribe(
             commands=command_handler,
-            alive=alive_handler
+            alive=container.life_state_registry.alive_handler
         )
 
         async def message_loop():

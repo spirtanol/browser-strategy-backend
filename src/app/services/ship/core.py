@@ -1,11 +1,10 @@
 from typing import Optional, Callable
-import json
 
 from app.core.exceptions import ServiceNotLoadedError
 from app.repositories.ship import ShipRepository, ShipEntity
 from app.core.db import Redis
 from app.services.lifestate.registry import LifeStateRegistry
-from app.mappers.ship import ShipMapper
+from app.schemas.ship import ShipDetailInfoOut
 
 
 class CoreShipService:
@@ -13,14 +12,12 @@ class CoreShipService:
         self, 
         repository: ShipRepository,
         life_state_registry: LifeStateRegistry,
-        redis_factory: Callable[[], Redis],
-        ship_mapper: ShipMapper
+        redis_factory: Callable[[], Redis]
     ):
         self.repository = repository
         self._identity_map: dict[int, ShipEntity] = None
         self._redis_factory = redis_factory
         self._life_state_registry = life_state_registry
-        self._ship_mapper = ship_mapper
 
     async def load(self):
         entities = await self.repository.get_all()
@@ -41,8 +38,8 @@ class CoreShipService:
 
         for entity in self.get_all():
             if self._life_state_registry.is_alive_ship(entity.id):
-                payload = json.dumps(self._ship_mapper.to_dict(entity))
-                await redis.publish(f'ship:{entity.id}', payload)
+                dto = ShipDetailInfoOut.from_entity(entity)
+                await redis.publish(f'ship:{entity.id}', dto.model_dump_json())
     
     async def is_empty(self):
         return await self.repository.is_empty()

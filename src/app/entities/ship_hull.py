@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Any
 from app.defs.ship_hull import HullConfig, get_hull_config
 
 
@@ -13,7 +13,7 @@ class ShipHull:
             'size': self.size,
         }
 
-    def from_dict(self, data: dict[str, any]):
+    def from_dict(self, data: dict[str, Any]):
         self.hull_config = get_hull_config(data.get('conf', 'base'))
         self.size = data.get('size', 1)
 

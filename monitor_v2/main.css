@@ -1,0 +1,157 @@
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1e1e1e; color: #d4d4d4; display: flex; flex-direction: column; gap: 20px; padding: 20px; margin: 0; }
+
+/* Панели управления */
+.panel { background: #252526; padding: 15px; border-radius: 8px; border: 1px solid #333; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+
+/* Поля ввода и кнопки */
+input, textarea { background: #1e1e1e; color: #fff; border: 1px solid #555; padding: 8px 12px; border-radius: 4px; font-family: monospace; font-size: 14px; }
+input:focus, textarea:focus { border-color: #0e639c; outline: none; }
+
+button { background: #0e639c; color: white; border: none; padding: 10px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; font-family: sans-serif; transition: background 0.2s; }
+button:hover { background: #1177bb; }
+button:disabled { background: #444; color: #888; cursor: not-allowed; }
+
+/* Структурированная сетка панелей авторизации и подключения */
+.header-grid { display: grid; grid-template-columns: minmax(320px, 1fr) minmax(250px, 1fr); gap: 20px; }
+.auth-form { display: flex; gap: 10px; align-items: center; width: 100%; }
+.auth-form input { flex: 1; }
+
+.main-content { display: flex; gap: 20px; flex-grow: 1; }
+.column { flex: 1; display: flex; flex-direction: column; gap: 15px; }
+
+/* Стили для мониторов */
+.monitor { background: #252526; padding: 15px; border-radius: 8px; border: 1px solid #333; white-space: pre-wrap; margin: 0; flex-grow: 1; min-height: 150px; font-family: monospace; }
+
+/* Стилизация карточки Игрока (User Card) */
+.user-card {
+    background: linear-gradient(135deg, #2d2d30 0%, #252526 100%);
+    border: 2px solid #4e4e50;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+    overflow: hidden;
+    transition: opacity 0.3s;
+}
+.user-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 4px; height: 100%;
+    background: #007acc;
+}
+.user-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #3e3e42;
+    padding-bottom: 8px;
+}
+.user-name { font-size: 1.3em; font-weight: bold; color: #569cd6; }
+.user-id { font-size: 0.85em; color: #858585; background: #1e1e1e; padding: 2px 6px; border-radius: 4px; }
+.user-main-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.user-balance {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #ffd700;
+}
+.coin-icon { font-size: 1.2em; animation: spin 4s linear infinite; display: inline-block; }
+
+/* Кнопка переключения JSON */
+.toggle-json-btn {
+    background: #3a3a3c;
+    color: #ccc;
+    font-size: 0.8em;
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid #555;
+}
+.toggle-json-btn:hover { background: #4a4a4c; color: #fff; }
+
+/* Блок для сырого JSON внутри карточки */
+.user-raw-json {
+    display: none;
+    background: #1e1e1e;
+    color: #9cdcfe;
+    border: 1px solid #333;
+    padding: 10px;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 0.9em;
+    white-space: pre-wrap;
+    margin-top: 5px;
+    max-height: 250px;
+    overflow-y: auto;
+}
+.user-raw-json.active {
+    display: block;
+}
+
+@keyframes spin {
+    0% { transform: rotateY(0deg); }
+    100% { transform: rotateY(360deg); }
+}
+
+/* Стили для управления */
+textarea { background: #252526; color: #ce9178; border: 1px solid #333; padding: 10px; border-radius: 8px; resize: vertical; min-height: 200px; font-family: monospace; }
+.status { font-size: 0.85em; color: #888; padding: 5px 10px; background: #1e1e1e; border-radius: 4px; border-left: 3px solid #007acc; }
+
+/* Список кораблей и их карточки */
+.ships-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.ship-card {
+    background: #1e1e1e;
+    border: 1px solid #3e3e42;
+    border-radius: 6px;
+    padding: 10px;
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr;
+    align-items: center;
+    font-size: 0.85em;
+}
+
+.ship-name {
+    font-weight: bold;
+    color: #4ec9b0;
+}
+
+.ship-meta {
+    color: #cccccc;
+    text-align: right;
+}
+
+/* Делаем строки кораблей кликабельными при наведении */
+.ships-list .ship-card {
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+.ships-list .ship-card:hover {
+    background: #2d2d30;
+    border-color: #007acc;
+}
+
+/* Стили для списка трюма */
+.storage-list {
+    margin: 5px 0 0 0;
+    padding-left: 20px;
+    font-family: monospace;
+    font-size: 0.9em;
+    color: #ce9178;
+}
+.storage-list li {
+    margin-bottom: 3px;
+}

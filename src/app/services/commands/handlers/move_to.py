@@ -1,18 +1,18 @@
-from .base import ShipCommand
+from .base import FleetCommand
 from app.entities.world import World
 from app.entities.commands.move import MoveCommand
 
 
-class MoveToCommandParams(ShipCommand):
+class MoveToCommandParams(FleetCommand):
     x: float
     y: float
 
 def move_to_command(world: World, params: MoveToCommandParams):
-    ship = world.find_ship(params.ship_id)
+    fleet = world.find_fleet(params.fleet_id)
     
-    if ship is None:
+    if fleet is None:
         return
 
     if params.clear_queue:
-        ship.command_queue.cancel_all()
-    ship.command_queue.add(MoveCommand(params.x, params.y), params.on_top)
+        fleet.command_queue.cancel_all()
+    fleet.command_queue.add(MoveCommand(params.x, params.y), params.on_top)

@@ -10,12 +10,17 @@ class TokenInvalidError(Exception):
 class AuthError(Exception):
     pass
 
-class ShipNotFound(NotFoundEntityError):
+class ShipNotFoundError(NotFoundEntityError):
     def __init__(self, id: int):
         super().__init__(f"Ship {id} not found")
         self.id = id
 
-class UserNotFound(NotFoundEntityError):
+class FleetNotFoundError(NotFoundEntityError):
+    def __init__(self, id: int):
+        super().__init__(f"Fleet {id} not found")
+        self.id = id
+
+class UserNotFoundError(NotFoundEntityError):
     def __init__(self, id: int):
         super().__init__(f"User {id} not found")
         self.id = id

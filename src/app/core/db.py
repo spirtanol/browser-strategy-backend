@@ -51,7 +51,7 @@ async def get_session(session_maker) -> AsyncGenerator[AsyncSession, None]:
 get_context_session = asynccontextmanager(get_session)
 
 @lru_cache
-def get_redis(redis_url: str) -> Redis:
-    redis = Redis.from_url(redis_url, decode_responses=True)
+def get_redis(redis_url: str, decode_responses: bool) -> Redis:
+    redis = Redis.from_url(redis_url, decode_responses=decode_responses)
     reg_to_dispose(redis.close)
     return redis

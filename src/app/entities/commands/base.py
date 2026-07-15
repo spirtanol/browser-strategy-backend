@@ -1,25 +1,34 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
-
-from ..world import World
+from typing import TYPE_CHECKING, Optional, Any
 
 if TYPE_CHECKING:
-    from ..ship import ShipEntity
+    from .command_queue import CommandQueue
+    from ..fleet import FleetEntity
+    from ..world import World
 
 
 class BaseCommand:
     def __init__(self):
         self.finished = False
-        self.is_dependend = False
+        self.is_dependent = False
+        self.queue: Optional[CommandQueue] = None
 
-    def update(self, ship: ShipEntity, dt: float, world: World):
+    def update(self, dt: float):
         pass
 
-    def to_dict(self) -> dict[str, any]:
-        return {}
+    def to_dict(self) -> dict[str, Any]:
+        return {'_dep': self.is_dependent}
 
-    def from_dict(self, data: dict[str, any]):
+    def from_dict(self, data: dict[str, Any]):
+        self.is_dependent = data.get('_dep', False)
+
+    def cancel(self):
         pass
 
-    def cancel(self, ship: ShipEntity):
-        pass
+    @property
+    def fleet(self) -> FleetEntity:
+        return self.queue.fleet
+
+    @property
+    def world(self) -> World:
+        return self.fleet.world

@@ -1,22 +1,19 @@
 class ResourcesPool:
     def __init__(self):
         self._pool: dict[int, int | float] = {}
-        self._cache = None
+        self._cache: int | float = 0
 
     def add(self, id: int, amount: int | float):
         if id not in self._pool or self._pool[id] != amount:
             self._pool[id] = amount
-            self._cache = None
+            self._cache = sum(self._pool.values())
 
     def remove(self, id: int):
-        if id in self._pool:
-            self._pool.pop(id, None)
-            self._cache = None
+        if self._pool.pop(id, None) is not None:
+            self._cache = sum(self._pool.values())
 
     @property
     def value(self):
-        if self._cache is None:
-            self._cache = sum(self._pool.values())
         return self._cache
 
     def __str__(self) -> str:

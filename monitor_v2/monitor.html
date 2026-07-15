@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Fleet Debug Control v3 (OOP)</title>
+    <!-- Подключаем внешние стили -->
+    <link rel="stylesheet" href="main.css">
+</head>
+<body>
+
+    <!-- Верхняя сетка с Авторизацией и Подключением к Сокету -->
+    <div class="header-grid">
+        <!-- Панель 1: Авторизация -->
+        <div class="panel">
+            <strong>Авторизация API:</strong>
+            <div class="auth-form">
+                <input type="text" id="emailInput" placeholder="Email" value="player@test.com">
+                <input type="password" id="passwordInput" placeholder="Пароль" value="12qwaszx">
+                <button id="loginBtn">Войти</button>
+            </div>
+        </div>
+
+        <!-- Панель 2: Подключение -->
+        <div class="panel">
+            <strong>Токен:</strong>
+            <input type="text" id="tokenInput" placeholder="Токен заполнится после входа..." style="width: 150px; flex-grow: 1;">
+            
+            <strong>Fleet ID:</strong>
+            <input type="number" id="fleetIdInput" value="1" min="1" style="width: 60px; text-align: center;">
+
+            <button id="connectBtn">Подключиться</button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <!-- Левая колонка с карточкой игрока и логами -->
+        <div class="column">
+            <strong>Состояние Игрока (User State):</strong>
+            <div id="userCardContainer">
+                <div class="user-card" id="userCard" style="opacity: 0.5;">
+                    <div class="user-card-header">
+                        <span class="user-name" id="userName">Ожидание данных...</span>
+                        <span class="user-id" id="userId">ID: --</span>
+                    </div>
+                    <div class="user-main-info">
+                        <div class="user-balance">
+                            <span class="coin-icon">🪙</span> 
+                            <span id="userMoney">0</span>
+                        </div>
+                        <button class="toggle-json-btn" id="toggleJsonBtn">JSON</button>
+                    </div>
+                    <pre class="user-raw-json" id="userRawBlock">{}</pre>
+                </div>
+            </div>
+
+            <strong>Состояние Флотилии (Fleet State):</strong>
+            <div id="fleetCardContainer">
+                <div class="user-card" id="fleetCard" style="opacity: 0.5;">
+                    <div class="user-card-header">
+                        <span class="user-name" id="fleetName">Ожидание данных флотилии...</span>
+                        <span class="user-id" id="fleetId">ID: --</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.9em; margin-top: 5px;">
+                        <div><strong>Координаты:</strong> <span id="fleetPos">--</span></div>
+                        <div><strong>Макс. Скорость:</strong> <span id="fleetSpeed">--</span></div>
+                        <div><strong>Статус:</strong> <span id="fleetState">--</span></div>
+                        <div><strong>Пришвартован к:</strong> <span id="fleetAttached">--</span></div>
+                    </div>
+                    <div style="margin-top: 5px; font-size: 0.9em;">
+                        <strong>Текущая команда:</strong>
+                        <pre id="fleetCommand" style="background: #1e1e1e; padding: 5px; border-radius: 4px; margin: 5px 0 0 0; font-size: 0.85em; overflow-x: auto;">null</pre>
+                    </div>
+                    
+                    <!-- Секция с подкарточками кораблей -->
+                    <div style="margin-top: 10px; border-top: 1px solid #3e3e42; padding-top: 10px;">
+                        <strong>Состав флотилии (Корабли):</strong>
+                        <div id="shipsContainer" class="ships-list">
+                            <!-- Сюда будут динамически вставляться корабли -->
+                        </div>
+                    </div>
+
+                    <div class="user-main-info" style="margin-top: 10px; justify-content: flex-end;">
+                        <button class="toggle-json-btn" id="toggleFleetJsonBtn">JSON</button>
+                    </div>
+                    <pre class="user-raw-json" id="fleetRawBlock">{}</pre>
+                </div>
+            </div>
+
+            <strong>Детали Корабля (Ship Detail State):</strong>
+            <div id="shipDetailCardContainer">
+                <div class="user-card" id="shipDetailCard" style="opacity: 0.5;">
+                    <div class="user-card-header">
+                        <span class="user-name" id="shipDetailName">Корабль не выбран...</span>
+                        <span class="user-id" id="shipDetailId">ID: --</span>
+                    </div>
+                    
+                    <!-- Характеристики корабля -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.9em; margin-top: 5px;">
+                        <div><strong>Экипаж:</strong> <span id="shipDetailCrew">--</span></div>
+                        <div><strong>Прочность (HP):</strong> <span id="shipDetailHp">--</span></div>
+                        <div><strong>Скорость:</strong> <span id="shipDetailSpeed">--</span></div>
+                        <div><strong>Голод:</strong> <span id="shipDetailHunger">--</span></div>
+                        <div><strong>Вес / Плавучесть:</strong> <span id="shipDetailWeightFloat">-- / --</span></div>
+                        <div><strong>Потребление / Выработка:</strong> <span id="shipDetailPower">-- / --</span></div>
+                        <div><strong>Объем трюма:</strong> <span id="shipDetailVolume">-- / --</span></div>
+                    </div>
+
+                    <!-- Трюм (Storage) -->
+                    <div style="margin-top: 10px; border-top: 1px solid #3e3e42; padding-top: 10px;">
+                        <strong>Содержимое трюма (Storage):</strong>
+                        <ul id="shipDetailStorage" class="storage-list">
+                            <li style="color: #666; font-style: italic;">Трюм пуст</li>
+                        </ul>
+                    </div>
+
+                    <div class="user-main-info" style="margin-top: 10px; justify-content: flex-end;">
+                        <button class="toggle-json-btn" id="toggleShipJsonBtn">JSON</button>
+                    </div>
+                    <pre class="user-raw-json" id="shipDetailRawBlock">{}</pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Правая колонка управления -->
+        <div class="column">
+            <strong>Отправить команду (JSON):</strong>
+            <textarea id="cmdInput"></textarea>
+            <button id="sendBtn" disabled>Отправить команду</button>
+            <div id="log" class="status">Ожидание авторизации</div>
+        </div>
+    </div>
+
+    <!-- Подключаем внешнюю логику -->
+    <script src="main.js"></script>
+</body>
+</html>

@@ -1,3 +1,5 @@
+from typing import Any
+
 from .base import BaseModel
 
 from sqlalchemy.orm import Mapped, mapped_column
@@ -10,7 +12,7 @@ class UserModel(BaseModel):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(128), nullable=False, index=False)
-    state: Mapped[dict[str, any]] = mapped_column(
+    state: Mapped[dict[str, Any]] = mapped_column(
         MutableDict.as_mutable(JSON),
         default=dict, 
         nullable=False,

@@ -4,7 +4,7 @@ import time
 from typing import TYPE_CHECKING, AsyncContextManager, Optional
 import logging
 
-from app.services.ship.core import CoreShipService
+from app.services.fleet.core import CoreFleetService
 from app.services.user.core import CoreUserService
 from app.services.platform.core import CorePlatformService
 from app.services.site.core import CoreSiteService
@@ -12,9 +12,9 @@ from app.entities.world import World, Awaitable
 from app.services.market import MarketService
 
 if TYPE_CHECKING:
-    from .ship import ShipEntity
-    from .platform import PlatformEntity
-    from .user import UserEntity
+    from app.entities.fleet import FleetEntity
+    from app.entities.platform import PlatformEntity
+    from app.entities.user import UserEntity
 
 
 logger = logging.getLogger("app.core.engine")
@@ -24,7 +24,7 @@ class Engine(World):
         self, 
         dt_multiplier: float, 
         tick_duration: int, 
-        ship_service: CoreShipService,
+        fleet_service: CoreFleetService,
         user_service: CoreUserService,
         platform_service: CorePlatformService,
         site_service: CoreSiteService,
@@ -32,7 +32,7 @@ class Engine(World):
         save_interval: float,
         market_service: MarketService
     ):
-        self.ship_service = ship_service
+        self.fleet_service = fleet_service
         self.user_service = user_service
         self.platform_service = platform_service
         self.site_service = site_service
@@ -48,7 +48,7 @@ class Engine(World):
     async def _save(self):
         async with self.transaction_manager():
             await self.user_service.save()
-            await self.ship_service.save()
+            await self.fleet_service.save()
             await self.platform_service.save()
             await self.site_service.save()
 
@@ -60,15 +60,15 @@ class Engine(World):
         self.running = True
 
         async with self.transaction_manager():
-            if await self.ship_service.is_empty():
+            if await self.fleet_service.is_empty():
                 logger.debug('Мир пуст')
                 return
 
         async with self.transaction_manager():
             await self.user_service.load()
-            await self.ship_service.load()
-            await self.platform_service.load()
-            await self.site_service.load()
+            await self.fleet_service.load(self)
+            await self.platform_service.load(self)
+            await self.site_service.load(self)
 
         last_tick_time = time.perf_counter()
         last_save_time = last_tick_time
@@ -78,9 +78,9 @@ class Engine(World):
                 current_time = time.perf_counter()
                 dt = (current_time - last_tick_time) * self.dt_multiplier
 
-                ships = self.ship_service.get_all()
-                for ship in ships:
-                    ship.update(dt, self)
+                fleets = self.fleet_service.get_all()
+                for fleet in fleets:
+                    fleet.update(dt)
                 
                 if len(self._async_actions) > 0:
                     async with self.transaction_manager():
@@ -100,7 +100,7 @@ class Engine(World):
                     site.update(dt)
                     
                 # Можно сбрасывать данные не каждый тик
-                await self.ship_service.flush()
+                await self.fleet_service.flush()
                 await self.user_service.flush()
                 await self.platform_service.flush()
                 await self.site_service.flush()
@@ -133,8 +133,8 @@ class Engine(World):
     def stop(self):
         self.running = False
 
-    def find_ship(self, id: int) -> Optional[ShipEntity]:
-        return self.ship_service.find(id)
+    def find_fleet(self, id: int) -> Optional[FleetEntity]:
+        return self.fleet_service.find(id)
 
     def find_platform(self, id: int) -> Optional[PlatformEntity]:
         return self.platform_service.find(id)

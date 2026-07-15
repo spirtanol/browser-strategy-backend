@@ -10,5 +10,8 @@ class GameCommandRequest(BaseModel):
     action: str
     params: dict = {}
 
+class SelectShipCommand(BaseModel):
+    ship_id: int
+
 class GameCommand(GameCommandRequest):
     id: str = Field(default_factory=generate_6char_id)

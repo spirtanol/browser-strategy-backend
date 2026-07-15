@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Any
 
 import app.defs.consts as Consts
 from app.defs.enums import ObjectType
@@ -8,9 +8,6 @@ from .factory import register_command
 from ..world import World
 from app.utils import xy
 from .move import MoveCommand
-
-if TYPE_CHECKING:
-    from ..ship import ShipEntity
 
 
 @register_command()
@@ -22,13 +19,15 @@ class MoveToObjectCommand(BaseCommand):
         self.obj_id = obj_id
         self.obj_type = obj_type
 
-    def update(self, ship: ShipEntity, dt: float, world: World):
+    def update(self, dt: float):
         if self.finished:
             return
 
+        fleet = self.fleet
+
         match self.obj_type:
             case ObjectType.Platform:
-                platform = world.find_platform(self.obj_id)
+                platform = self.world.find_platform(self.obj_id)
                 if platform is None:
                     self.finished = True
                     return
@@ -36,7 +35,7 @@ class MoveToObjectCommand(BaseCommand):
                 destX = platform.x
                 destY = platform.y
             case ObjectType.Site:
-                site = world.find_site(self.obj_id)
+                site = self.world.find_site(self.obj_id)
                 if site is None:
                     self.finished
                     return
@@ -47,7 +46,7 @@ class MoveToObjectCommand(BaseCommand):
                 self.finished = True
                 return
 
-        distance = xy.distance(ship.pos.x, ship.pos.y, destX, destY)
+        distance = xy.distance(fleet.pos.x, fleet.pos.y, destX, destY)
 
         if distance < Consts.ObjectRadius:
             self.finished = True
@@ -56,21 +55,21 @@ class MoveToObjectCommand(BaseCommand):
         x, y = xy.point_at_distance(
             destX, 
             destY, 
-            ship.pos.x, 
-            ship.pos.y, 
+            fleet.pos.x, 
+            fleet.pos.y, 
             Consts.ObjectRadius * 0.9
         )
         move_command = MoveCommand(x, y)
-        move_command.is_dependend = True
-        ship.command_queue.add(move_command, True)
+        move_command.is_dependent = True
+        self.queue.add(move_command, True)
 
-    def to_dict(self) -> dict[str, any]:
+    def to_dict(self) -> dict[str, Any]:
         data = super().to_dict()
         data['obj_id'] = self.obj_id
         data['obj_type'] = self.obj_type
         return data
 
-    def from_dict(self, data: dict[str, any]):
+    def from_dict(self, data: dict[str, Any]):
         super().from_dict(data)
         self.obj_id = data.get('obj_id')
         self.obj_type = ObjectType(data.get('obj_type'))

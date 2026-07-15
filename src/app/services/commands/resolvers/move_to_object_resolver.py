@@ -1,11 +1,11 @@
 from .base import ResolverContext, CommandResolvingError
 from app.entities.user import UserEntity
 from ..handlers.move_to_object import MoveToObjectCommandParams, ObjectType
-from .ship import ship_command_resolver
+from .fleet_resolver import fleet_command_resolver
 
 
 async def move_to_object_resolver(context: ResolverContext, user: UserEntity, dto: MoveToObjectCommandParams):
-    await ship_command_resolver(context, user, dto)
+    await fleet_command_resolver(context, user, dto)
     
     match dto.obj_type:
         case ObjectType.Platform:

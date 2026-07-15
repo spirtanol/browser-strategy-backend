@@ -1,12 +1,10 @@
 import asyncio
 from typing import Callable, Optional
-import json
 from logging import Logger
 
 from app.repositories.user import UserRepository, UserEntity
 from app.core.db import Redis
 from app.services.lifestate.pusher import LifeStatePusher
-from app.mappers.user import UserMapper
 
 
 _alive_users: dict[int, int] = {}
@@ -16,18 +14,16 @@ class ClientUserService:
         self, 
         user_repository: UserRepository,
         redis_factory: Callable[[], Redis],
-        life_state_pusher: LifeStatePusher,
-        user_mapper: UserMapper
+        life_state_pusher: LifeStatePusher
     ):
         self._user_repo = user_repository
         self._redis_factory = redis_factory
         self._state_pusher = life_state_pusher
-        self._user_mapper = user_mapper
 
     async def find(self, id: int) -> Optional[UserEntity]:
         return await self._user_repo.find(id)
 
-    async def subscribe_to_updates(self, id: int, logger: Logger) -> UserEntity:
+    async def subscribe_to_updates(self, id: int, logger: Logger) -> str:
         redis = self._redis_factory()
         subscriber = redis.pubsub()
         channel_name = f'user:{id}'
@@ -42,9 +38,7 @@ class ClientUserService:
         try:
             async for message in subscriber.listen():
                 if message['type'] == 'message':
-                    raw_data = json.loads(message['data'])
-                    
-                    yield self._user_mapper.from_dict(raw_data)
+                    yield message['data']
 
                     now = asyncio.get_event_loop().time()
                     if now - last_keep_alive > 60:

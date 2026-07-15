@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, TypeVar, TYPE_CHECKING
+from typing import Optional, TypeVar, TYPE_CHECKING, Any
 import enum
 
 from app.defs.modules import ModuleDef
@@ -29,7 +29,7 @@ class BaseShipModule:
         self._hp = module_def.hp
         self.ship: Optional[ShipEntity] = None
 
-    def to_dict(self) -> dict[str, any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             'id': self.id,
             'hp': self._hp
@@ -49,7 +49,7 @@ class BaseShipModule:
     def ex_slots(self) -> int:
         return self.module_def.ex_slots
 
-    def load_state(self, state: dict[str, any]):
+    def load_state(self, state: dict[str, Any]):
         self.id = state.get('id', 0)
         self._hp = state.get('hp', self.module_def.hp)
 
@@ -60,7 +60,6 @@ class BaseShipModule:
         self.ship = ship
         self.ship.get_net(NetworkResource.Weight).add(self.id, self.module_def.weight)
         self.ship.get_net(NetworkResource.HP).add(self.id, self.module_def.hp)
-        self.ship_moving_state_changed(MovingState.Idle, ship.moving_state)
         self.on_attached(ship)
 
     def detached(self):

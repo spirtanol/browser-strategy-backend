@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from .base import BaseShipModule, UpdatePhase
 from app.defs.items import NetworkResource, FUEL_BARREL, EMPTY_BARREL
@@ -26,13 +26,13 @@ class GeneratorModule(BaseShipModule):
         self.active: bool = active
         self.__def = module_def
 
-    def to_dict(self) -> dict[str, any]:
+    def to_dict(self) -> dict[str, Any]:
         data = super().to_dict()
         data['fuel'] = self.fuel
         data['active'] = self.active
         return data
 
-    def load_state(self, data: dict[str, any]):
+    def load_state(self, data: dict[str, Any]):
         super().load_state(data)
         self.fuel = data.get('fuel', 0.0)
         self.active = data.get('active', True)

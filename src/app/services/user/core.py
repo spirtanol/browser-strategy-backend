@@ -1,25 +1,22 @@
 from typing import Optional, Callable
-import json
 
 from app.core.exceptions import ServiceNotLoadedError
 from app.repositories.user import UserRepository
 from app.entities.user import UserEntity
-from app.mappers.user import UserMapper
 from app.core.db import Redis
 from app.services.lifestate.registry import LifeStateRegistry
+from app.schemas.user import UserStateOut
 
 
 class CoreUserService:
     def __init__(
         self, 
         user_repo: UserRepository, 
-        user_mapper: UserMapper,
         redis_factory: Callable[[], Redis],
         life_state_registry: LifeStateRegistry
     ):
         self._user_repo = user_repo
         self._identity_map: dict[int, UserEntity] = None
-        self._user_mapper = user_mapper
         self._redis_factory = redis_factory
         self._life_state_registry = life_state_registry
 
@@ -42,8 +39,8 @@ class CoreUserService:
 
         for entity in self.get_all():
             if self._life_state_registry.is_alive_user(entity.id):
-                payload = json.dumps(self._user_mapper.to_dict(entity))
-                await redis.publish(f'user:{entity.id}', payload)
+                dto = UserStateOut.from_entity(entity)
+                await redis.publish(f'user:{entity.id}', dto.model_dump_json())
     
     def find(self, id: int) -> Optional[UserEntity]:
         if self._identity_map is None:

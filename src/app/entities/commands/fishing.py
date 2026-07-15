@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, TypedDict, Any
 
 from .base import BaseCommand
 from ..world import World
@@ -11,85 +11,127 @@ from app.defs import items as ItemDefs
 from .factory import register_command
 
 if TYPE_CHECKING:
-    from ..ship import ShipEntity
     from ..site import SiteEntity
 
+
+class FillLimit(TypedDict):
+    ship_id: int
+    limit: int
 
 @register_command()
 class FishingCommand(BaseCommand):
     name = 'fishing'
 
-    def __init__(self, site_id: int = 0, target_quantity: int = 0):
+    def __init__(self, site_id: int = 0, fill_limits: Optional[list[FillLimit]] = None):
         super().__init__()
         self.site_id: int = site_id
-        self.target_quantity = target_quantity
+        self.fill_limits = fill_limits if fill_limits else []
         self.site: Optional[SiteEntity] = None
         self._progress: float = 0.0
+        self._finished_targets = set()
 
-    def to_dict(self) -> dict[str, any]:
+    def to_dict(self) -> dict[str, Any]:
         data = super().to_dict()
         data['site_id'] = self.site_id
-        data['target_quantity'] = self.target_quantity
+        data['fill_limits'] = self.fill_limits
         data['progress'] = self._progress
+        data['finished_targets'] = list(self._finished_targets)
         return data
 
-    def from_dict(self, data: dict[str, any]):
+    def from_dict(self, data: dict[str, Any]):
         super().from_dict(data)
         self.site_id = data.get('site_id', 0)
-        self.target_quantity = data.get('target_quantity', 0)
+        self.fill_limits = data.get('fill_limits', [])
         self._progress = data.get('progress', 0.0)
+        self._finished_targets = set(data.get('finished_targets', []))
 
-    def update(self, ship: ShipEntity, dt: float, world: World):
+    def update(self, dt: float):
         if self.finished:
             return
 
         if self.site is None:
-            self.site = world.find_site(self.site_id)
+            self.site = self.world.find_site(self.site_id)
             if self.site is None or self.site.site_content != SiteContent.Fish:
                 self.finished = True
                 return
+
+        fleet = self.fleet
         
-        if ship.attached_to_type != ObjectType.Site or ship.attached_to_id != self.site_id:
-            distance = xy.distance(ship.pos.x, ship.pos.y, self.site.x, self.site.y)
+        if fleet.attached_to_type != ObjectType.Site or fleet.attached_to_id != self.site_id:
+            distance = xy.distance(fleet.pos.x, fleet.pos.y, self.site.x, self.site.y)
 
             if distance < Consts.ObjectRadius:
-                ship.attach_to(self.site)
-                ship.moving_state = MovingState.Fishing
+                fleet.attach_to(self.site)
+                fleet.moving_state = MovingState.Fishing
             else:
                 move_command = MoveToObjectCommand(self.site_id, ObjectType.Site)
-                move_command.is_dependend = True
-                ship.command_queue.add(move_command, True)
+                move_command.is_dependent = True
+                fleet.command_queue.add(move_command, True)
         else:
-            self._progress += dt
-            end_of_space = False
+            self._progress += (dt / Consts.HarvestingCycle)
 
-            if self._progress >= Consts.HarvestingCycle:
-                self._progress -= Consts.HarvestingCycle
-                extraction_quantity = ship.get_net(ItemDefs.NetworkResource.HarvestingFish).value * self.site.efficiency
-                fish_quantity = int(extraction_quantity / ItemDefs.Fish.weight)
-                
-                fish_volume = fish_quantity * ItemDefs.Fish.volume
-                free_space = ship.max_volume - ship.volume
-                if free_space < fish_volume:
-                    fish_quantity = int(free_space / ItemDefs.Fish.volume)
-                    end_of_space = True
-                
-                fish_weight = fish_quantity * ItemDefs.Fish.weight
-                free_space = ship.floatage - ship.weight
-                if free_space < fish_weight:
-                    fish_quantity = int(free_space / ItemDefs.Fish.volume)
-                    end_of_space = True
+            if self._progress >= 1.0:
+                self._progress -= 1.0
+                extraction_quantity = int(fleet.get_net_value(ItemDefs.NetworkResource.HarvestingFish) * self.site.efficiency / ItemDefs.Fish.weight)
+                items_left = extraction_quantity
 
-                extraction_quantity = fish_quantity * ItemDefs.Fish.weight
-                self.site.reserve -= extraction_quantity
-                ship.push(ItemDefs.Fish, fish_quantity)
+                for fill_limit in self.fill_limits:
+                    if items_left <= 0:
+                        break
+                    
+                    ship_id, limit = fill_limit['ship_id'], fill_limit['limit']
 
-            if end_of_space or (self.target_quantity > 0 and (ship.get_amount(ItemDefs.Fish) >= self.target_quantity)):
-                self.finished = True
-                ship.moving_state = MovingState.Idle
-                ship.detach(self.site)
-                return
+                    if ship_id in self._finished_targets:
+                        continue
 
-    def cancel(self, ship: ShipEntity):
-        if ship.moving_state == MovingState.Fishing:
-            ship.moving_state = MovingState.Idle
+                    ship = self.fleet.ships.get(ship_id, None)
+                    if ship is None:
+                        self._finished_targets.add(ship_id)
+                        continue
+                    
+                    no_space = False
+                    items_fit = items_left
+
+                    if limit > 0:
+                        limit_left = limit - ship.get_amount(ItemDefs.Fish)
+                        
+                        if limit_left <= 0:
+                            self._finished_targets.add(ship_id)        
+                            continue
+
+                        if limit_left <= items_fit:
+                            items_fit = limit_left
+                            no_space = True
+
+                    items_volume = items_fit * ItemDefs.Fish.volume
+                    free_space = ship.max_volume - ship.volume
+                    if free_space < items_volume:
+                        items_fit = int(free_space / ItemDefs.Fish.volume)
+                        no_space = True
+                        
+                    items_weight = items_fit * ItemDefs.Fish.weight
+                    free_space = ship.floatage - ship.weight
+                    if free_space < items_weight:
+                        items_fit = int(free_space / ItemDefs.Fish.weight)
+                        no_space = True
+
+                    if items_fit > 0:
+                        ship.push(ItemDefs.Fish, items_fit)
+                        self.site.reserve -= items_fit * ItemDefs.Fish.weight
+                        items_left -= items_fit
+
+                    if no_space:
+                        self._finished_targets.add(ship_id)
+
+            for fill_limit in self.fill_limits:
+                if fill_limit['ship_id'] not in self._finished_targets:
+                    return
+
+            self.finished = True
+            fleet.moving_state = MovingState.Idle
+            fleet.detach(self.site)
+            return
+
+    def cancel(self):
+        if self.fleet.moving_state == MovingState.Fishing:
+            self.fleet.moving_state = MovingState.Idle
