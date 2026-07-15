@@ -19,7 +19,7 @@ class Position:
         dx = x - self.x
         dy = y - self.y
         dist = math.sqrt(dx**2 + dy**2)
-        if distance <= delta:
+        if dist <= delta:
             self.x = x
             self.y = y
             return True

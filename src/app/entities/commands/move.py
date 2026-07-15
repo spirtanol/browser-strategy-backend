@@ -29,18 +29,20 @@ class MoveCommand(BaseCommand):
         if self.finished:
             return
 
-        if self.fleet.moving_state == MovingState.Docked:
+        fleet = self.fleet
+
+        if fleet.moving_state == MovingState.Docked:
             undocking = UndockingCommand()
             undocking.is_dependent = True
             self.queue.add(undocking, True)
             return
 
-        delta = ship.max_speed / 3600.0 * dt
-        self.fleet.moving_state = MovingState.Move
-        if self.fleet.pos.move_to(self.x, self.y, delta):
+        delta = fleet.max_speed / 3600.0 * dt
+        fleet.moving_state = MovingState.Move
+        if fleet.pos.move_to(self.x, self.y, delta):
             self.finished = True
-            self.fleet.moving_state = MovingState.Idle
+            fleet.moving_state = MovingState.Idle
 
     def cancel(self):
-        if self.fleet.moving_state == MovingState.Move:
-            self.fleet.moving_state = MovingState.Idle
+        if fleet.moving_state == MovingState.Move:
+            fleet.moving_state = MovingState.Idle

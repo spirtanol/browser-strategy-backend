@@ -215,8 +215,7 @@ class Container:
         return CoreShipService(
             repository=self.ship_repository,
             redis_factory=self.get_redis,
-            life_state_registry=self.life_state_registry,
-            ship_mapper=self.ship_mapper
+            life_state_registry=self.life_state_registry
         )
 
     @cached_property
@@ -224,8 +223,7 @@ class Container:
         return ClientShipService(
             ship_repository=self.ship_repository,
             redis_factory=self.get_redis,
-            life_state_pusher=self.life_state_pusher,
-            ship_mapper=self.ship_mapper
+            life_state_pusher=self.life_state_pusher
         )
 
     @cached_property

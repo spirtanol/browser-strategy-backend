@@ -10,7 +10,6 @@ from .common import EntityState
 class ShipShortInfoOut(BaseModel):
     id: int
     name: str
-    hunger: float
     crew: int
     max_speed: float
 
@@ -19,7 +18,6 @@ class ShipShortInfoOut(BaseModel):
         return cls(
             id=ship.id,
             name=ship.name,
-            hunger=ship.hunger,
             crew=ship.crew,
             max_speed=ship.max_speed
         )
@@ -42,8 +40,6 @@ class ShipDetailInfoOut(EntityState):
 
     @classmethod
     def from_entity(cls, ship: ShipEntity) -> 'ShipStateOut':
-        current_command = ship.command_queue.get_current()
-
         return cls(
             id=ship.id,
             name=ship.name,

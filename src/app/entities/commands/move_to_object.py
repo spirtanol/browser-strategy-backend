@@ -19,7 +19,7 @@ class MoveToObjectCommand(BaseCommand):
         self.obj_id = obj_id
         self.obj_type = obj_type
 
-    def update(self):
+    def update(self, dt: float):
         if self.finished:
             return
 
@@ -35,7 +35,7 @@ class MoveToObjectCommand(BaseCommand):
                 destX = platform.x
                 destY = platform.y
             case ObjectType.Site:
-                site = world.find_site(self.obj_id)
+                site = self.world.find_site(self.obj_id)
                 if site is None:
                     self.finished
                     return

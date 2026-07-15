@@ -16,7 +16,7 @@ class UndockingCommand(BaseCommand):
         super().__init__()
         self.progress: float = 0.0
 
-    def update(self):
+    def update(self, dt: float):
         if self.finished:
             return
         

@@ -37,7 +37,7 @@ class DockingCommand(BaseCommand):
             self.platform = self.world.find_platform(self.platform_id)
         return self.platform
 
-    def update(self):
+    def update(self, dt: float):
         if self.finished:
             return
 

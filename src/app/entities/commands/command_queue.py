@@ -47,7 +47,7 @@ class CommandQueue:
 
     def pop_current(self):
         if len(self.queue) > 0:
-            self.queue[0].cancel(self.fleet)
+            self.queue[0].cancel()
             self.queue.popleft()
     
     def pop_last(self):
@@ -56,11 +56,11 @@ class CommandQueue:
     def cancel_depends(self):
         if len(self.queue) > 0:
             if self.queue[0].is_dependent:
-                self.queue[0].cancel(self.fleet)
+                self.queue[0].cancel()
                 while self.queue[0].is_dependent:
                     self.queue.popleft()
 
     def cancel_all(self):
         if len(self.queue) > 0:
-            self.queue[0].cancel(self.fleet)
+            self.queue[0].cancel()
             self.queue.clear()

@@ -7,7 +7,7 @@ from app.entities.commands.fishing import FishingCommand, FillLimit
 
 class FishingCommandParams(FleetCommand):
     site_id: int
-    fill_limmits: list[FillLimit] = Field(min_length=1)
+    fill_limits: list[FillLimit] = Field(min_length=1)
 
 def fishing_command(world: World, params: FishingCommandParams):
     fleet = world.find_fleet(params.fleet_id)
@@ -23,4 +23,4 @@ def fishing_command(world: World, params: FishingCommandParams):
     if params.clear_queue:
         fleet.command_queue.cancel_all()
     
-    fleet.command_queue.add(FishingCommand(site_id=params.site_id, target_quantity=params.target_quantity), params.on_top)
+    fleet.command_queue.add(FishingCommand(site_id=params.site_id, fill_limits=params.fill_limits), params.on_top)

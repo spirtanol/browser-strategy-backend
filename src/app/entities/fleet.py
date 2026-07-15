@@ -62,7 +62,7 @@ class FleetEntity(MapEntity):
         ship.fleet_id = 0
 
     def attach_to(self, anchor_point: AnchorPointEntity) -> None:
-        self.attached_to_id = anchor_point.get_id()
+        self.attached_to_id = anchor_point.id
         self.attached_to_type = anchor_point.get_type()
         anchor_point.attach(self.id)
 

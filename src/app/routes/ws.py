@@ -14,8 +14,9 @@ from fastapi import (
 from app.bootstrap.container import get_context_container
 from app.core.exceptions import ShipNotFoundError, AuthError, FleetNotFoundError
 from app.schemas.ship import ShipDetailInfoOut
-from app.schemas.commands import GameCommandRequest, GameCommand
+from app.schemas.commands import GameCommandRequest, GameCommand, SelectShipCommand
 from .deps import get_ws_user, UserEntity
+from app.schemas.fleet import FleetStateOut
 
 
 logger = logging.getLogger("app.core.engine")
@@ -45,15 +46,17 @@ def create_ws_router(prefix: str, tags: list[str]):
 
                 try:
                     redis_client = container.get_redis()
-
+                    
+                    fleets_last_state: dict[int, FleetStateOut] = {}
                     async def fleet_state_loop():
                         async for fleet_state in container.client_fleet_service.subscribe_to_updates(fleet_id, logger):
+                            dto = FleetStateOut.model_validate_json(fleet_state)
+                            fleets_last_state[dto.id] = dto
                             await websocket.send_text(fleet_state)
 
-                    #async def ship_state_loop():
-                    #    async for ship in container.client_ship_service.subscribe_to_updates(ship_id, logger):
-                    #        ship_dto = ShipDetailInfoOut.from_entity(ship)
-                    #        await websocket.send_text(ship_dto.model_dump_json())
+                    async def ship_state_loop(ship_id: int):
+                        async for ship_state in container.client_ship_service.subscribe_to_updates(ship_id, logger):
+                            await websocket.send_text(ship_state)
 
                     user_id = user.id
                     async def user_state_loop():
@@ -62,16 +65,35 @@ def create_ws_router(prefix: str, tags: list[str]):
 
                     async def client_command_loop():
                         try:
+                            ship_state_task = None
+
                             while True:
                                 data = await websocket.receive_json()
                                 try:
                                     request = GameCommandRequest.model_validate(data)
-                                    command = GameCommand(
-                                        action=request.action,
-                                        params=request.params
-                                    )
-                                    async with container.transaction():
-                                        await container.command_dispatcher_service.dispatch(command, user)
+                                    if request.action == 'select_ship':
+                                        select_command = SelectShipCommand.model_validate(data)
+                                        ship_id = select_command.ship_id
+                                        
+                                        fleet_last_state = fleets_last_state.get(fleet_id, None)
+                                        if fleet_last_state is None:
+                                            continue
+
+                                        if ship_id not in (ship.id for ship in fleet_last_state.ships):
+                                            continue
+
+                                        if ship_state_task:
+                                            ship_state_task.cancel()
+                                            ship_state_task = None
+
+                                        ship_state_task = asyncio.create_task(ship_state_loop(ship_id))
+                                    else:
+                                        command = GameCommand(
+                                            action=request.action,
+                                            params=request.params
+                                        )
+                                        async with container.transaction():
+                                            await container.command_dispatcher_service.dispatch(command, user)
                                 except ValidationError as e:
                                     logger.exception(f'Ошибка парса команды {str(e)}')
                                 except Exception as e:
@@ -83,7 +105,6 @@ def create_ws_router(prefix: str, tags: list[str]):
                         [
                             asyncio.create_task(user_state_loop()),
                             asyncio.create_task(fleet_state_loop()),
-                            #asyncio.create_task(ship_state_loop()),
                             asyncio.create_task(client_command_loop()),
                         ],
                         return_when=asyncio.FIRST_COMPLETED,

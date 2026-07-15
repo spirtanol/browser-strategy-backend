@@ -44,7 +44,7 @@ class TradeCommand(BaseCommand):
         self.operations = data.get('operations', [])
         self.stage = data.get('stage', 0)
 
-    def update(self):
+    def update(self, dt: float):
         if self.finished or self.is_process:
             return
 
