@@ -45,7 +45,7 @@ class DockingCommand(BaseCommand):
 
         match self.stage:
             case 0:
-                platform = self.get_platform(world)
+                platform = self.get_platform()
                 if platform is None:
                     self.finished = True
                     return
@@ -60,7 +60,7 @@ class DockingCommand(BaseCommand):
             case 1:
                 if fleet.moving_state == MovingState.Docked:
                     self.finished = True
-                    platform = self.get_platform(world)
+                    platform = self.get_platform()
                     fleet.attach_to(platform)
                     return
 

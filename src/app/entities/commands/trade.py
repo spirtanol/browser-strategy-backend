@@ -109,10 +109,10 @@ class TradeCommand(BaseCommand):
                             order_owner = self.world.find_user(order.owner_id)
 
                             if op['op_type'] == MarketOrderType.Buy:
-                                ship_owner.money -= money
+                                owner.money -= money
                                 ship.push(item_type, diff)
                             else:
-                                ship_owner.money += money
+                                owner.money += money
                                 ship.pull(item_type, diff)
                                 
                             if not order_owner.is_npc:
