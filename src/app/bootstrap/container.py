@@ -78,14 +78,13 @@ class Container:
         return CoreFleetService(
             repository=self.fleet_repository,
             life_state_registry=self.life_state_registry,
-            redis_factory=self.get_redis,
-            ship_service=self.core_ship_service
+            ship_service=self.core_ship_service,
+            save_interval=int(self.config.save_interval)
         )
 
     @cached_property
     def client_fleet_service(self):
         return ClientFleetService(
-            fleet_repository=self.fleet_repository,
             redis_factory=self.get_redis,
             life_state_pusher=self.life_state_pusher
         )
@@ -174,8 +173,7 @@ class Container:
     def core_user_service(self) -> CoreUserService:
         return CoreUserService(
             user_repo=self.user_repository,
-            life_state_registry=self.life_state_registry,
-            redis_factory=self.get_redis
+            life_state_registry=self.life_state_registry
         )
 
     @cached_property
@@ -214,14 +212,12 @@ class Container:
     def core_ship_service(self) -> CoreShipService:
         return CoreShipService(
             repository=self.ship_repository,
-            redis_factory=self.get_redis,
             life_state_registry=self.life_state_registry
         )
 
     @cached_property
     def client_ship_service(self) -> ClientShipService:
         return ClientShipService(
-            ship_repository=self.ship_repository,
             redis_factory=self.get_redis,
             life_state_pusher=self.life_state_pusher
         )

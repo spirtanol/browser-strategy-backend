@@ -50,11 +50,10 @@ class EngineModule(BaseShipModule):
                 elif self.ship.fleet.moving_state in (MovingState.Maneuvering, MovingState.Fishing):
                     consumption = self.__def.fuel_consumption * dt / 7200.0
                     
-                if consumption > 0:
-                    if self.fuel <= consumption:
-                        have, write_off = self.ship.request_item(MDO, self.__def.fuel_consumption)
-                        self.fuel += have
-                        write_off()
+                if self.fuel <= consumption or self.fuel <= 0:
+                    have, write_off = self.ship.request_item(MDO, self.__def.fuel_consumption)
+                    self.fuel += have
+                    write_off()
                     
                     self.fuel -= min(consumption, self.fuel)
                     self.ship.storage.get_net(NetworkResource.Weight).add(self.id, self.fuel * MDO.weight)

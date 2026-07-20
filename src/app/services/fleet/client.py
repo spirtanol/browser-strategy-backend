@@ -4,9 +4,8 @@ import asyncio
 
 from redis.asyncio import Redis
 
-from app.entities.fleet import FleetEntity
-from app.repositories.fleet import FleetRepository
 from app.services.lifestate.pusher import LifeStatePusher
+from app.schemas.fleet import FleetStateOut
 
 
 _alive_fleets: dict[int, int] = {}
@@ -14,16 +13,16 @@ _alive_fleets: dict[int, int] = {}
 class ClientFleetService:
     def __init__(
         self, 
-        fleet_repository: FleetRepository,
         redis_factory: Callable[[], Redis],
         life_state_pusher: LifeStatePusher
     ):
-        self._repo = fleet_repository
         self._redis_factory = redis_factory
         self._state_pusher = life_state_pusher
 
-    async def find(self, id: int) -> Optional[FleetEntity]:
-        return await self._repo.find(id)
+    async def find(self, id: int) -> Optional[FleetStateOut]:
+        redis = self._redis_factory()
+        fleet_raw = await redis.get(f'c_fleet:{id}')
+        return FleetStateOut.model_validate_json(fleet_raw) if fleet_raw else None
 
     async def subscribe_to_updates(self, id: int, logger: Logger) -> str:
         redis = self._redis_factory()

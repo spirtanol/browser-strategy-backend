@@ -47,8 +47,12 @@ def create_ws_router(prefix: str, tags: list[str]):
                 try:
                     redis_client = container.get_redis()
                     
-                    fleets_last_state: dict[int, FleetStateOut] = {}
+                    fleets_last_state: dict[int, FleetStateOut] = {
+                        fleet.id: fleet
+                    }
                     async def fleet_state_loop():
+                        await websocket.send_text(fleet.model_dump_json())
+
                         async for fleet_state in container.client_fleet_service.subscribe_to_updates(fleet_id, logger):
                             dto = FleetStateOut.model_validate_json(fleet_state)
                             fleets_last_state[dto.id] = dto

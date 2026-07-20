@@ -242,7 +242,7 @@ class FleetCard {
                 <div class="ship-card" data-id="${ship.id}">
                     <span class="ship-name">🚢 ${escapeHtml(ship.name)} (${ship.id})</span>
                     <span class="ship-meta">👥 Экипаж: ${ship.crew}</span>
-                    <span class="ship-meta">⚡ ${ship.max_speed.toFixed(1)} узл.</span>
+                    <span class="ship-meta">⚡ ${ship.max_speed.toFixed(1)}</span>
                 </div>
             `;
         });

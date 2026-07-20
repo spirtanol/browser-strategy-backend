@@ -1,8 +1,10 @@
 from __future__ import annotations
 import asyncio
 import time
-from typing import TYPE_CHECKING, AsyncContextManager, Optional
+from typing import TYPE_CHECKING, AsyncContextManager, Optional, Callable
 import logging
+
+from redis.asyncio.client import Pipeline, Redis
 
 from app.services.fleet.core import CoreFleetService
 from app.services.user.core import CoreUserService
@@ -28,9 +30,10 @@ class Engine(World):
         user_service: CoreUserService,
         platform_service: CorePlatformService,
         site_service: CoreSiteService,
-        transaction_manager: callable[[], AsyncContextManager[None]],
+        transaction_manager: Callable[[], AsyncContextManager[None]],
         save_interval: float,
-        market_service: MarketService
+        market_service: MarketService,
+        redis_factory: Callable[[], Redis]
     ):
         self.fleet_service = fleet_service
         self.user_service = user_service
@@ -44,11 +47,12 @@ class Engine(World):
         self.save_interval = save_interval
         self._async_actions = []
         self.market_service = market_service
+        self.redis_factory = redis_factory
 
-    async def _save(self):
+    async def _save(self, pipe: Optional[Pipeline]):
         async with self.transaction_manager():
             await self.user_service.save()
-            await self.fleet_service.save()
+            await self.fleet_service.save(pipe)
             await self.platform_service.save()
             await self.site_service.save()
 
@@ -64,11 +68,15 @@ class Engine(World):
                 logger.debug('Мир пуст')
                 return
 
-        async with self.transaction_manager():
-            await self.user_service.load()
-            await self.fleet_service.load(self)
-            await self.platform_service.load(self)
-            await self.site_service.load(self)
+        redis = self.redis_factory()
+
+        async with redis.pipeline() as pipe:
+            async with self.transaction_manager():
+                await self.user_service.load()
+                await self.fleet_service.load(self, pipe)
+                await self.platform_service.load(self)
+                await self.site_service.load(self)
+                await pipe.execute()
 
         last_tick_time = time.perf_counter()
         last_save_time = last_tick_time
@@ -98,19 +106,24 @@ class Engine(World):
                 sites = self.site_service.get_all()
                 for site in sites:
                     site.update(dt)
-                    
-                # Можно сбрасывать данные не каждый тик
-                await self.fleet_service.flush()
-                await self.user_service.flush()
-                await self.platform_service.flush()
-                await self.site_service.flush()
+                
+                redis = self.redis_factory()
 
-                last_tick_time = current_time
+                async with redis.pipeline() as pipe:
+                    # Можно сбрасывать данные не каждый тик
+                    self.fleet_service.flush(pipe)
+                    self.user_service.flush(pipe)
+                    self.platform_service.flush()
+                    self.site_service.flush()
 
-                # Сохранение данных в базу
-                if current_time - last_save_time >= self.save_interval:
-                    await self._save()
-                    last_save_time = current_time
+                    last_tick_time = current_time
+
+                    # Сохранение данных в базу
+                    if current_time - last_save_time >= self.save_interval:
+                        await self._save(pipe)
+                        last_save_time = current_time
+
+                    await pipe.execute()
 
                 elapsed = time.perf_counter() - current_time
                 sleep_time = max(0, self.tick_duration - elapsed)
@@ -125,7 +138,7 @@ class Engine(World):
             self.is_running = False
             logger.info("Сохраняем прогресс...")
             async def final_save():
-                await self._save()
+                await self._save(None)
                     
             await asyncio.shield(final_save())
             logger.info("Прогресс сохранен. Выход.")
@@ -145,7 +158,7 @@ class Engine(World):
     def find_site(self, id: int) -> Optional[SiteEntity]:
         return self.site_service.find(id)
 
-    def add_async_action(self, action: callable[[], Awaitable[any]]):
+    def add_async_action(self, action: Callable[[], Awaitable[any]]):
         self._async_actions.append(action)
     
     def get_market_service(self) -> MarketService:

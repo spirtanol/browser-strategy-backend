@@ -35,5 +35,5 @@ class CoreSiteService:
 
         return self._identity_map.get(id, None)
 
-    async def flush(self):
+    def flush(self):
         pass

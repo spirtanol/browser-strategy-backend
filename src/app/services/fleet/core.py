@@ -1,5 +1,7 @@
 from typing import Optional, Callable
 
+from redis.asyncio.client import Pipeline
+
 from app.repositories.fleet import FleetRepository
 from app.services.lifestate.registry import LifeStateRegistry
 from app.core.db import Redis
@@ -16,16 +18,22 @@ class CoreFleetService:
         self,
         repository: FleetRepository,
         life_state_registry: LifeStateRegistry,
-        redis_factory: Callable[[], Redis],
-        ship_service: CoreShipService
+        ship_service: CoreShipService,
+        save_interval: int
     ):
         self.repository = repository
         self._identity_map: dict[int, FleetEntity] = None
-        self._redis_factory = redis_factory
         self._life_state_registry = life_state_registry
         self._ship_service = ship_service
+        self._save_interval = save_interval
 
-    async def load(self, world: World):
+    def _set_cache(self, pipe: Pipeline):
+        for entity in self._identity_map.values():
+            dto = FleetStateOut.from_entity(entity)
+            pipe.set(f'c_fleet:{entity.id}', dto.model_dump_json(), ex=self._save_interval + 10)
+            entity.cached = True
+
+    async def load(self, world: World, pipe: Pipeline):
         entities = await self.repository.get_all()
         self._identity_map = {}
         for entity in entities:
@@ -41,26 +49,35 @@ class CoreFleetService:
                 raise FleetNotFoundError(ship.fleet_id)
             fleet.add_ship(ship)
 
+        self._set_cache(pipe)
+
     def get_all(self) -> list[FleetEntity]:
         return self._identity_map.values()
 
-    async def save(self):
+    async def save(self, pipe: Optional[Pipeline]):
         if self._identity_map:
             await self.repository.save(self._identity_map.values())
+
+        if pipe:
+            self._set_cache(pipe)
+        
         await self._ship_service.save()
 
-    async def flush(self):
+    def flush(self, pipe: Pipeline):
         if self._identity_map is None:
             return
 
-        redis = self._redis_factory()
-
         for entity in self.get_all():
+            if not entity.cached:
+                dto = FleetStateOut.from_entity(entity)
+                pipe.set(f'c_fleet:{entity.id}', dto.model_dump_json(), ex=self._save_interval + 10)
+                entity.cached = True
+
             if self._life_state_registry.is_alive_fleet(entity.id):
                 dto = FleetStateOut.from_entity(entity)
-                await redis.publish(f'fleet:{entity.id}', dto.model_dump_json())
+                pipe.publish(f'fleet:{entity.id}', dto.model_dump_json())
 
-        await self._ship_service.flush()
+        self._ship_service.flush(pipe)
 
     async def is_empty(self):
         return await self.repository.is_empty()

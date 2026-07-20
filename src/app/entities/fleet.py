@@ -24,6 +24,7 @@ class FleetEntity(MapEntity):
         self.attached_to_id: Optional[int] = None
         self.attached_to_type: Optional[ObjectType] = None
         self.ships: dict[int, ShipEntity] = {}
+        self.cached: bool = False
 
     @property
     def moving_state(self) -> MovingState:

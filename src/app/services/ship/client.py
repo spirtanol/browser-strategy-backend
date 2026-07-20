@@ -6,7 +6,6 @@ import json
 from redis.asyncio import Redis
 
 from app.entities.ship import ShipEntity
-from app.repositories.ship import ShipRepository
 from app.services.lifestate.pusher import LifeStatePusher
 
 _alive_ships: dict[int, int] = {}
@@ -14,16 +13,11 @@ _alive_ships: dict[int, int] = {}
 class ClientShipService:
     def __init__(
         self, 
-        ship_repository: ShipRepository,
         redis_factory: Callable[[], Redis],
         life_state_pusher: LifeStatePusher
     ):
-        self._ship_repo = ship_repository
         self._redis_factory = redis_factory
         self._state_pusher = life_state_pusher
-
-    async def find(self, id: int) -> Optional[ShipEntity]:
-        return await self._ship_repo.find(id)
 
     async def subscribe_to_updates(self, id: int, logger: Logger) -> str:
         redis = self._redis_factory()

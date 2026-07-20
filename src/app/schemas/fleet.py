@@ -35,6 +35,7 @@ class FleetStateOut(EntityState):
     attached_to_id: Optional[int]
     attached_to_type: Optional[ObjectType]
     ships: list[ShipShortInfoOut]
+    owner_id: int
 
     @classmethod
     def from_entity(cls, fleet: FleetEntity) -> 'FleetStateOut':
@@ -49,5 +50,6 @@ class FleetStateOut(EntityState):
             moving_state=fleet.moving_state,
             attached_to_id=fleet.attached_to_id,
             attached_to_type=fleet.attached_to_type,
-            ships=[ShipShortInfoOut.from_entity(ship) for ship in fleet.ships.values()]
+            ships=[ShipShortInfoOut.from_entity(ship) for ship in fleet.ships.values()],
+            owner_id=fleet.owner_id
         )
