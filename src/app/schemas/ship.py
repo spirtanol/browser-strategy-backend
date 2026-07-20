@@ -49,7 +49,7 @@ class ShipDetailInfoOut(EntityState):
             weight=ship.weight,
             floatage=ship.floatage,
             hp=ship.hp,
-            power=(ship.get_net(NetworkResource.PowerIn).value, ship.get_net(NetworkResource.PowerOut).value),
+            power=(ship.storage.get_net(NetworkResource.PowerIn).value, ship.storage.get_net(NetworkResource.PowerOut).value),
             max_speed=ship.max_speed,
             max_volume=ship.max_volume,
             volume=ship.volume

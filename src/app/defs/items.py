@@ -5,8 +5,8 @@ import enum
 @dataclass(frozen=True)
 class StorageItemType:
     name: str
-    weight: float
-    volume: float
+    weight: float # кг
+    volume: float # м3
 
 
 MEAL = StorageItemType(
@@ -14,28 +14,21 @@ MEAL = StorageItemType(
     weight=0.5,
     volume=0.0002
 )
-EMPTY_BARREL = StorageItemType(
-    name='EmptyBarrel', 
-    weight=10,
-    volume=0.2
-)
-FUEL_BARREL = StorageItemType(
-    name='FuelBarrel', 
-    weight=100 + EMPTY_BARREL.weight,
-    volume=EMPTY_BARREL.volume
-)
 Fish = StorageItemType(
     name='Fish', 
     weight=5,
     volume=0.005
 )
-
+MDO = StorageItemType(
+    name='MDO',
+    weight=0.875,
+    volume=0.0001,
+)
 
 MAP = {
     MEAL.name: MEAL,
-    EMPTY_BARREL.name: EMPTY_BARREL,
-    FUEL_BARREL.name: FUEL_BARREL,
-    Fish.name: Fish
+    Fish.name: Fish,
+    MDO.name: MDO
 }
 
 class NetworkResource(enum.StrEnum):

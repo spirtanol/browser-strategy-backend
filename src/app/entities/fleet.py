@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, override, TYPE_CHECKING
+from typing import Optional, override, TYPE_CHECKING, Callable
 
 from .base import MapEntity
 from .commands.command_queue import CommandQueue
@@ -7,7 +7,7 @@ from .world import World
 from app.utils import xy
 from app.defs.enums import MovingState, ObjectType
 from .anchor_point import AnchorPointEntity
-from app.defs.items import NetworkResource
+from app.defs.items import NetworkResource, StorageItemType
 
 if TYPE_CHECKING:
     from .ship import ShipEntity
@@ -77,9 +77,29 @@ class FleetEntity(MapEntity):
     def get_net_value(self, resource: NetworkResource) -> int | float:
         value = 0
         for ship in self.ships.values():
-            value += ship.get_net(resource).value
+            value += ship.storage.get_net(resource).value
         return value
 
     @override
     def get_type(self) -> ObjectType:
         return ObjectType.Fleet
+
+    def request_item(self, ship: ShipEntity, item_type: StorageItemType, amount: int) -> tuple[int, Callable]:
+        request_list = {}
+        left = amount
+
+        for s in self.ships.values():
+            if left <= 0:
+                break
+            if s.id == ship.id:
+                continue
+            have = min(s.storage.get_amount(item_type), left)
+            if have  > 0:
+                left -= have
+                request_list[s.id] = have
+
+        def write_off():
+            for ship_id, q in request_list.items():
+                self.ships[ship_id].storage.pull(item_type, q)
+                
+        return (amount - left, write_off)

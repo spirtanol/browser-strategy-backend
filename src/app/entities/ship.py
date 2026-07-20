@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Callable
 import math
 
 from .storage import Storage, StorageItemType
@@ -51,24 +51,25 @@ class ShipEntity:
         self.hunger += (dt / HungerCycle)
 
         if self.hunger >= 1.0:
-            meals_on_storage = self.storage.get_amount(MEAL)
-            if meals_on_storage > 0:
-                meal_consume = min(self.crew, meals_on_storage)
-                self.storage.pull(MEAL, meal_consume)
-                self.hunger -= meal_consume / self.crew
-
-    def push(self, item_type: StorageItemType, amount: int) -> None:
-        self.storage.push(item_type, amount)
-
-    def pull(self, item_type:StorageItemType, amount: int) -> bool:
-        return self.storage.pull(item_type, amount)
+            have, write_off = self.request_item(MEAL, self.crew)
+            if have > 0:
+                self.hunger -= have / self.crew
+                write_off()
+                
+    def request_item(self, item_type: StorageItemType, amount: int) -> tuple[int, Callable]:
+        have = self.storage.get_amount(item_type)
+        if have >= amount:
+            def write_off():
+                self.storage.pull(item_type, amount)
+            return (amount, write_off)
         
-    def get_amount(self, item_type: StorageItemType) -> int:
-        return self.storage.get_amount(item_type)
-
-    def get_net(self, resource: NetworkResource) -> ResourcesPool:
-        return self.storage.get_net(resource)
-
+        left = amount - have
+        fleet_have, fleet_write_off = self.fleet.request_item(self, item_type, left)
+        def write_off():
+            self.storage.pull(item_type, have)
+            fleet_write_off()
+        return (have + fleet_have, write_off)
+        
     def add_module(self, module: BaseShipModule):
         self.modules.append(module)
         module.attached(self)
@@ -92,12 +93,12 @@ class ShipEntity:
     @property
     def weight(self) -> float:
         weight = self.storage.get_total_mass()
-        weight += self.get_net(NetworkResource.Weight).value
+        weight += self.storage.get_net(NetworkResource.Weight).value
         return weight + self.hull.get_weight()
 
     @property
     def hp(self) -> int:
-        return self.get_net(NetworkResource.HP).value + self.hull.get_health()
+        return self.storage.get_net(NetworkResource.HP).value + self.hull.get_health()
 
     @property
     def floatage(self) -> int:
@@ -113,7 +114,7 @@ class ShipEntity:
 
     @property
     def max_speed(self) -> float:
-        thrust = self.get_net(NetworkResource.Thrust).value
+        thrust = self.storage.get_net(NetworkResource.Thrust).value
         base_drag = math.sqrt(self.floatage)
     
         load_ratio = self.weight / self.floatage

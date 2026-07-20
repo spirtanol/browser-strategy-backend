@@ -2,16 +2,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from .base import BaseShipModule, UpdatePhase
-from app.defs.items import NetworkResource, FUEL_BARREL, EMPTY_BARREL
+from app.defs.items import NetworkResource, MDO
 from app.defs.modules import GeneratorModuleDef, BaseGenerator
 from .factory import register_module
-from app.defs.consts import DayLenght
 
 if TYPE_CHECKING:
     from ..ship import ShipEntity
 
-
-FUEL_WEIGHT = FUEL_BARREL.weight - EMPTY_BARREL.weight
 
 @register_module(BaseGenerator.name)
 class GeneratorModule(BaseShipModule):
@@ -41,14 +38,15 @@ class GeneratorModule(BaseShipModule):
         if self.active:
             if phase == UpdatePhase.Anounce:
                 output = self.module_def.output if self.fuel > 0 else 0.0
-                self.ship.get_net(NetworkResource.PowerOut).add(self.id, output)
-                self.ship.get_net(NetworkResource.Weight).add(self.id, self.fuel * FUEL_WEIGHT)
+                self.ship.storage.get_net(NetworkResource.PowerOut).add(self.id, output)
+                self.ship.storage.get_net(NetworkResource.Weight).add(self.id, self.fuel * MDO.weight)
             elif phase == UpdatePhase.Execution:
-                consumption = dt / DayLenght * self.__def.fuel_consumption
+                consumption = dt / 3600.0 * self.__def.fuel_consumption
                 if self.fuel <= consumption:
-                    if self.ship.pull(FUEL_BARREL, 1):
-                        self.ship.push(EMPTY_BARREL, 1)
-                        self.fuel += 1.0
+                    have, write_off = self.ship.request_item(MDO, self.__def.fuel_consumption)
+                    self.fuel += have
+                    write_off()
+
                 self.fuel -= min(consumption, self.fuel)
     
     def on_attached(self, ship: ShipEntity):

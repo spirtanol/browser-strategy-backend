@@ -93,7 +93,7 @@ class FishingCommand(BaseCommand):
                     items_fit = items_left
 
                     if limit > 0:
-                        limit_left = limit - ship.get_amount(ItemDefs.Fish)
+                        limit_left = limit - ship.storage.get_amount(ItemDefs.Fish)
                         
                         if limit_left <= 0:
                             self._finished_targets.add(ship_id)        
@@ -116,7 +116,7 @@ class FishingCommand(BaseCommand):
                         no_space = True
 
                     if items_fit > 0:
-                        ship.push(ItemDefs.Fish, items_fit)
+                        ship.storage.push(ItemDefs.Fish, items_fit)
                         self.site.reserve -= items_fit * ItemDefs.Fish.weight
                         items_left -= items_fit
 

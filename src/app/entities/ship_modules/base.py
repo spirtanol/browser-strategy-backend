@@ -58,14 +58,14 @@ class BaseShipModule:
 
     def attached(self, ship: ShipEntity):
         self.ship = ship
-        self.ship.get_net(NetworkResource.Weight).add(self.id, self.module_def.weight)
-        self.ship.get_net(NetworkResource.HP).add(self.id, self.module_def.hp)
+        self.ship.storage.get_net(NetworkResource.Weight).add(self.id, self.module_def.weight)
+        self.ship.storage.get_net(NetworkResource.HP).add(self.id, self.module_def.hp)
         self.on_attached(ship)
 
     def detached(self):
         if self.ship:
             for res in NetworkResource:
-                self.ship.get_net(res).remove(self.id)
+                self.ship.storage.get_net(res).remove(self.id)
             self.on_detached()
             self.ship = None
 

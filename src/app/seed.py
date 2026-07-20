@@ -56,23 +56,38 @@ async def seed_world(container: Container):
         await container.fleet_service.save(fleet)
 
         # Создаем корабль
-        ship = ShipEntity()
-        ship.name = 'Blue Shrimp'
-        fleet.add_ship(ship)
+        for i in range(2):
+            fishing_ship = ShipEntity()
+            fishing_ship.name = f'Blue Shrimp {i + 1}'
+            fleet.add_ship(fishing_ship)
 
-        # Создаем модули корабля
-        ship.hull.hull_config = BASE_HULL
-        ship.hull.size = 1
-        
-        ship.add_module(ModuleFactory.create(ModuleDefs.BaseGenerator.name, ship.get_counter(), active=True))
-        ship.add_module(ModuleFactory.create(ModuleDefs.BaseEngine.name, ship.get_counter(), active=True))
-        ship.add_module(ModuleFactory.create(ModuleDefs.FishNet.name, ship.get_counter(), active=True))
-        
-        ship.crew = 10
-        ship.storage.push(ItemDefs.MEAL, 100)
-        ship.storage.push(ItemDefs.FUEL_BARREL, 10)
+            # Создаем модули корабля
+            fishing_ship.hull.hull_config = BASE_HULL
+            fishing_ship.hull.size = 1
+            
+            fishing_ship.add_module(ModuleFactory.create(ModuleDefs.BaseGenerator.name, fishing_ship.get_counter(), active=True))
+            fishing_ship.add_module(ModuleFactory.create(ModuleDefs.BaseEngine.name, fishing_ship.get_counter(), active=True))
+            fishing_ship.add_module(ModuleFactory.create(ModuleDefs.FishNet.name, fishing_ship.get_counter(), active=True))
+            
+            fishing_ship.crew = 10
+            await container.ship_service.save(fishing_ship)
 
-        await container.ship_service.save(ship)
+        cargo_ship = ShipEntity()
+        cargo_ship.name = 'Cargo Ship'
+        fleet.add_ship(cargo_ship)
+
+        cargo_ship.hull.hull_config = BASE_HULL
+        cargo_ship.hull.size = 2
+
+        cargo_ship.add_module(ModuleFactory.create(ModuleDefs.BaseGenerator.name, cargo_ship.get_counter(), active=True))
+        cargo_ship.add_module(ModuleFactory.create(ModuleDefs.BaseEngine.name, cargo_ship.get_counter(), active=True))
+
+        cargo_ship.crew = 10
+        
+        cargo_ship.storage.push(ItemDefs.MEAL, 1000)
+        cargo_ship.storage.push(ItemDefs.MDO, 10000)
+
+        await container.ship_service.save(cargo_ship)
 
         await container.market_service.create(CreateMarketOrderSchema(
             owner_id=npc_user.id,
@@ -88,15 +103,7 @@ async def seed_world(container: Container):
             order_type=MarketOrderType.Sell,
             price=20,
             quantity=1000,
-            item_name=ItemDefs.FUEL_BARREL.name
-        ))
-        await container.market_service.create(CreateMarketOrderSchema(
-            owner_id=npc_user.id,
-            platform_id=platform.id,
-            order_type=MarketOrderType.Buy,
-            price=5,
-            quantity=1000,
-            item_name=ItemDefs.EMPTY_BARREL.name
+            item_name=ItemDefs.MDO.name
         ))
         await container.market_service.create(CreateMarketOrderSchema(
             owner_id=npc_user.id,

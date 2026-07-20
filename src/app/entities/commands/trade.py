@@ -83,7 +83,7 @@ class TradeCommand(BaseCommand):
                         
                         left = op['quantity']
                         if op['op_type'] == MarketOrderType.Sell:
-                            have = ship.get_amount(item_type)
+                            have = ship.storage.get_amount(item_type)
                             if left == -1:
                                 left = have
                             else:
@@ -110,10 +110,10 @@ class TradeCommand(BaseCommand):
 
                             if op['op_type'] == MarketOrderType.Buy:
                                 owner.money -= money
-                                ship.push(item_type, diff)
+                                ship.storage.push(item_type, diff)
                             else:
                                 owner.money += money
-                                ship.pull(item_type, diff)
+                                ship.storage.pull(item_type, diff)
                                 
                             if not order_owner.is_npc:
                                 order.quantity -= diff

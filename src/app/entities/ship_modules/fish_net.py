@@ -38,12 +38,12 @@ class FishNetModule(BaseShipModule):
 
     def ship_moving_state_changed(self, old_state: MovingState, new_state: MovingState):
         if new_state == MovingState.Fishing:
-            self.ship.get_net(NetworkResource.PowerIn).add(self.id, self.__def.energy_consumption)
+            self.ship.storage.get_net(NetworkResource.PowerIn).add(self.id, self.__def.energy_consumption)
         else:
-            self.ship.get_net(NetworkResource.PowerIn).remove(self.id)
+            self.ship.storage.get_net(NetworkResource.PowerIn).remove(self.id)
 
     def on_attached(self, ship: ShipEntity):
-        self.ship.get_net(NetworkResource.HarvestingFish).add(self.id, self.__def.harvest_power)
+        self.ship.storage.get_net(NetworkResource.HarvestingFish).add(self.id, self.__def.harvest_power)
 
     def on_detached(self):
-        self.ship.get_net(NetworkResource.HarvestingFish).remove(self.id)
+        self.ship.storage.get_net(NetworkResource.HarvestingFish).remove(self.id)

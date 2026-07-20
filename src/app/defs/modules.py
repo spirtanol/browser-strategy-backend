@@ -28,19 +28,19 @@ class HarvesterModuleDef(ModuleDef):
 
 BaseEngine = EngineModuleDef(
     name='engine', 
-    weight=750, 
+    weight=1500, 
     hp=100, 
-    fuel_consumption=5, 
-    thrust=6000,
+    fuel_consumption=36, 
+    thrust=400,
     in_slots=1,
     ex_slots=0
 )
 
 BaseGenerator = GeneratorModuleDef(
     name='generator', 
-    weight=750, 
+    weight=500, 
     hp=100, 
-    fuel_consumption=1, 
+    fuel_consumption=7, 
     output=100,
     in_slots=1,
     ex_slots=0

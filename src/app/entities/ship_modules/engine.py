@@ -3,16 +3,13 @@ from typing import TYPE_CHECKING, Any
 
 from .base import BaseShipModule, UpdatePhase
 from app.defs.modules import EngineModuleDef, BaseEngine
-from app.defs.items import FUEL_BARREL, EMPTY_BARREL, NetworkResource
+from app.defs.items import NetworkResource, MDO
 from .factory import register_module
 from app.defs.enums import MovingState
-from app.defs.consts import DayLenght
 
 if TYPE_CHECKING:
     from ..ship import ShipEntity
 
-
-FUEL_WEIGHT = FUEL_BARREL.weight - EMPTY_BARREL.weight
 
 @register_module(BaseEngine.name)
 class EngineModule(BaseShipModule):
@@ -44,23 +41,23 @@ class EngineModule(BaseShipModule):
 
         if self.active:
             if phase == UpdatePhase.Anounce:
-                thrust = self.module_def.thrust
-                self.ship.get_net(NetworkResource.Thrust).add(self.id, thrust)
+                thrust = self.__def.thrust if self.fuel > 0 else 0
+                self.ship.storage.get_net(NetworkResource.Thrust).add(self.id, thrust)
             elif phase == UpdatePhase.Execution:
-                cdt = dt / DayLenght
                 consumption = 0
                 if self.ship.fleet.moving_state == MovingState.Move:
-                    consumption = cdt * self.__def.fuel_consumption
+                    consumption = self.__def.fuel_consumption * dt / 3600.0
                 elif self.ship.fleet.moving_state in (MovingState.Maneuvering, MovingState.Fishing):
-                    consumption = cdt * self.__def.fuel_consumption * 0.5
+                    consumption = self.__def.fuel_consumption * dt / 7200.0
                     
                 if consumption > 0:
                     if self.fuel <= consumption:
-                        if self.ship.pull(FUEL_BARREL, 1):
-                            self.ship.push(EMPTY_BARREL, 1)
-                            self.fuel += 1.0
+                        have, write_off = self.ship.request_item(MDO, self.__def.fuel_consumption)
+                        self.fuel += have
+                        write_off()
+                    
                     self.fuel -= min(consumption, self.fuel)
-                    self.ship.get_net(NetworkResource.Weight).add(self.id, self.fuel * FUEL_WEIGHT)
+                    self.ship.storage.get_net(NetworkResource.Weight).add(self.id, self.fuel * MDO.weight)
 
     def on_attached(self, ship: ShipEntity):
         self.update(0.0, UpdatePhase.Anounce)
