@@ -4,5 +4,6 @@ from . import (
     docking,
     trade,
     undocking,
-    fishing
+    fishing,
+    transfer_cargo,
 )
