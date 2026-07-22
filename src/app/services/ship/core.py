@@ -1,4 +1,4 @@
-from typing import Optional, Callable
+from typing import AsyncContextManager, Optional, Callable
 
 from redis.asyncio.client import Pipeline
 
@@ -12,25 +12,30 @@ class CoreShipService:
     def __init__(
         self, 
         repository: ShipRepository,
-        life_state_registry: LifeStateRegistry
+        life_state_registry: LifeStateRegistry,
+        transaction: Callable[[], AsyncContextManager[None]]
     ):
         self.repository = repository
-        self._identity_map: dict[int, ShipEntity] = None
+        self._identity_map: dict[int, ShipEntity] = {}
         self._life_state_registry = life_state_registry
+        self._loaded: bool = False
+        self._transaction = transaction
 
     async def load(self):
-        entities = await self.repository.get_all()
-        self._identity_map = {ent.id: ent for ent in entities}
+        async with self._transaction():
+            entities = await self.repository.get_all()
+            self._identity_map = {ent.id: ent for ent in entities}
+            self._loaded = True
 
     def get_all(self) -> list[ShipEntity]:
-        return self._identity_map.values()
+        return list(self._identity_map.values())
 
     async def save(self):
         if self._identity_map:
-            await self.repository.save(self._identity_map.values())
+            await self.repository.save(self.get_all())
 
     def flush(self, pipe: Pipeline):
-        if self._identity_map is None:
+        if not self._loaded:
             return
 
         for entity in self.get_all():
@@ -42,7 +47,7 @@ class CoreShipService:
         return await self.repository.is_empty()
 
     def find(self, id: int) -> Optional[ShipEntity]:
-        if self._identity_map is None:
+        if not self._loaded:
             raise ServiceNotLoadedError('CoreShipService')
             
         return self._identity_map.get(id, None)

@@ -8,7 +8,7 @@ def generate_6char_id() -> str:
 
 class GameCommandRequest(BaseModel):
     action: str
-    params: dict = {}
+    params: dict = Field(default_factory=dict)
 
 class SelectShipCommand(BaseModel):
     ship_id: int

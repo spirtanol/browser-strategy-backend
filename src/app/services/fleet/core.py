@@ -1,4 +1,4 @@
-from typing import Optional, Callable
+from typing import AsyncContextManager, Optional, Callable
 
 from redis.asyncio.client import Pipeline
 
@@ -19,13 +19,15 @@ class CoreFleetService:
         repository: FleetRepository,
         life_state_registry: LifeStateRegistry,
         ship_service: CoreShipService,
-        save_interval: int
+        save_interval: int,
+        transaction: Callable[[], AsyncContextManager[None]]
     ):
         self.repository = repository
-        self._identity_map: dict[int, FleetEntity] = None
+        self._identity_map: dict[int, FleetEntity] = {}
         self._life_state_registry = life_state_registry
         self._ship_service = ship_service
         self._save_interval = save_interval
+        self._transaction = transaction
 
     def _set_cache(self, pipe: Pipeline):
         for entity in self._identity_map.values():
@@ -34,34 +36,36 @@ class CoreFleetService:
             entity.cached = True
 
     async def load(self, world: World, pipe: Pipeline):
-        entities = await self.repository.get_all()
-        self._identity_map = {}
-        for entity in entities:
-            entity.bind_to_world(world)
-            self._identity_map[entity.id] = entity
+        async with self._transaction():
+            entities = await self.repository.get_all()
+            self._identity_map.clear()
+            for entity in entities:
+                entity.bind_to_world(world)
+                self._identity_map[entity.id] = entity
 
-        await self._ship_service.load()
-        ships = self._ship_service.get_all()
+            await self._ship_service.load()
+            ships = self._ship_service.get_all()
 
-        for ship in ships:
-            fleet = self.find(ship.fleet_id)
-            if fleet is None:
-                raise FleetNotFoundError(ship.fleet_id)
-            fleet.add_ship(ship)
+            for ship in ships:
+                fleet = self.find(ship.fleet_id)
+                if fleet is None:
+                    raise FleetNotFoundError(ship.fleet_id)
+                fleet.add_ship(ship)
 
-        self._set_cache(pipe)
+            self._set_cache(pipe)
 
     def get_all(self) -> list[FleetEntity]:
-        return self._identity_map.values()
+        return list(self._identity_map.values())
 
     async def save(self, pipe: Optional[Pipeline]):
-        if self._identity_map:
-            await self.repository.save(self._identity_map.values())
+        async with self._transaction():
+            if self._identity_map:
+                await self.repository.save(self.get_all())
 
-        if pipe:
-            self._set_cache(pipe)
-        
-        await self._ship_service.save()
+            if pipe:
+                self._set_cache(pipe)
+            
+            await self._ship_service.save()
 
     def flush(self, pipe: Pipeline):
         if self._identity_map is None:

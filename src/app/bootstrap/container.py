@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from functools import cached_property
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator, Optional
@@ -7,7 +8,7 @@ from contextvars import ContextVar
 from app.core.config import AppSettings, get_config
 from app.core.db import get_engine, get_session_maker, AsyncSession, get_redis, Redis
 from app.services.command_handler import CommandHandlerService
-from app.services.command_dispatcher import CommandDispatcherService
+from app.services.command_dispatcher import CommandDispatcherService, ResolverContext
 from app.services.ship.client import ClientShipService
 from app.services.ship.core import CoreShipService, ShipRepository
 from app.services.ship.action import ShipService
@@ -35,10 +36,29 @@ from app.services.fleet.client import ClientFleetService
 from app.services.market import MarketService, MarketOrderRepository
 
 
+_session_var: ContextVar[AsyncSession | None] = ContextVar("session", default=None)
+
+@dataclass(frozen=True)
+class ResolverContextImpl(ResolverContext):
+    client_ship_service: ClientShipService
+    client_platform_service: ClientPlatformService
+    market_service: MarketService
+    client_site_service: ClientSiteService
+    client_fleet_service: ClientFleetService
+
 class Container:
     def __init__(self, config: AppSettings):
         self.config = config
-        self._session_var: ContextVar[AsyncSession | None] = ContextVar("session", default=None) 
+
+    @cached_property
+    def resolver_context(self) -> ResolverContext:
+        return ResolverContextImpl(
+            client_ship_service=self.client_ship_service,
+            client_platform_service=self.client_platform_service,
+            market_service=self.market_service,
+            client_site_service=self.client_site_service,
+            client_fleet_service=self.client_fleet_service,
+        )
 
     @cached_property
     def market_order_repository(self) -> MarketOrderRepository:
@@ -49,7 +69,8 @@ class Container:
     @cached_property
     def market_service(self) -> MarketService:
         return MarketService(
-            market_order_repo=self.market_order_repository
+            market_order_repo=self.market_order_repository,
+            transaction=self.transaction
         )
 
     @cached_property
@@ -79,7 +100,8 @@ class Container:
             repository=self.fleet_repository,
             life_state_registry=self.life_state_registry,
             ship_service=self.core_ship_service,
-            save_interval=int(self.config.save_interval)
+            save_interval=int(self.config.save_interval),
+            transaction=self.transaction,
         )
 
     @cached_property
@@ -91,7 +113,10 @@ class Container:
     
     @cached_property
     def fleet_service(self):
-        return FleetService(fleet_repo=self.fleet_repository)
+        return FleetService(
+            fleet_repo=self.fleet_repository,
+            transaction=self.transaction,
+        )
 
     @cached_property
     def site_mapper(self) -> SiteMapper:
@@ -107,19 +132,22 @@ class Container:
     @cached_property
     def client_site_service(self) -> ClientSiteService:
         return ClientSiteService(
-            site_repository=self.site_repository
+            site_repository=self.site_repository,
+            transaction=self.transaction,
         )
 
     @cached_property
     def core_site_service(self) -> CoreSiteService:
         return CoreSiteService(
-            site_repo=self.site_repository
+            site_repo=self.site_repository,
+            transaction=self.transaction,
         )
 
     @cached_property
     def site_service(self) -> SiteService:
         return SiteService(
-            site_repo=self.site_repository
+            site_repo=self.site_repository,
+            transaction=self.transaction,
         )
 
     @cached_property
@@ -136,19 +164,22 @@ class Container:
     @cached_property
     def core_platform_service(self) -> CorePlatformService:
         return CorePlatformService(
-            platform_repo=self.platform_repository
+            platform_repo=self.platform_repository,
+            transaction=self.transaction,
         )
 
     @cached_property
     def client_platform_service(self) -> ClientPlatformService:
         return ClientPlatformService(
-            platform_repository=self.platform_repository
+            platform_repository=self.platform_repository,
+            transaction=self.transaction,
         )
 
     @cached_property
     def platform_service(self) -> PlatformService:
         return PlatformService(
-            platform_repo=self.platform_repository
+            platform_repo=self.platform_repository,
+            transaction=self.transaction,
         )
 
     @cached_property
@@ -173,7 +204,8 @@ class Container:
     def core_user_service(self) -> CoreUserService:
         return CoreUserService(
             user_repo=self.user_repository,
-            life_state_registry=self.life_state_registry
+            life_state_registry=self.life_state_registry,
+            transaction=self.transaction,
         )
 
     @cached_property
@@ -181,14 +213,16 @@ class Container:
         return ClientUserService(
             user_repository=self.user_repository,
             redis_factory=self.get_redis,
-            life_state_pusher=self.life_state_pusher
+            life_state_pusher=self.life_state_pusher,
+            transaction=self.transaction,
         )
 
     @cached_property
     def user_service(self) -> UserService:
         return UserService(
             user_repo=self.user_repository,
-            user_mapper=self.user_mapper
+            user_mapper=self.user_mapper,
+            transaction=self.transaction,
         )
 
     @cached_property
@@ -205,14 +239,16 @@ class Container:
     @cached_property
     def ship_service(self) -> ShipService:
         return ShipService(
-            ship_repo=self.ship_repository
+            ship_repo=self.ship_repository,
+            transaction=self.transaction,
         )
 
     @cached_property
     def core_ship_service(self) -> CoreShipService:
         return CoreShipService(
             repository=self.ship_repository,
-            life_state_registry=self.life_state_registry
+            life_state_registry=self.life_state_registry,
+            transaction=self.transaction,
         )
 
     @cached_property
@@ -230,7 +266,8 @@ class Container:
     def command_dispatcher_service(self) -> CommandDispatcherService:
         return CommandDispatcherService(
             redis_factory=self.get_redis,
-            resolver_context=self
+            resolver_context=self.resolver_context,
+            transaction=self.transaction
         )
     
     @cached_property
@@ -247,7 +284,7 @@ class Container:
         )
 
     def get_session(self) -> AsyncSession:
-        session = self._session_var.get()
+        session = _session_var.get()
         if session is None:
             raise RuntimeError("Сессия не инициализирована. Вызовите метод внутри контекста `transaction()`")
 
@@ -257,11 +294,15 @@ class Container:
         return get_redis(self.config.redis_url, decode_responses)
 
     @asynccontextmanager
-    async def transaction(self):
+    async def transaction(self) -> AsyncGenerator[None]:
+        if _session_var.get() is not None:
+            yield
+            return
+
         engine = get_engine(self.config.database_url, self.config.debug)
         session_maker = get_session_maker(engine)
         session = session_maker()
-        token = self._session_var.set(session)
+        token = _session_var.set(session)
         try:
             yield
             await session.commit()
@@ -270,9 +311,9 @@ class Container:
             raise
         finally:
             await session.close()
-            self._session_var.reset(token)
+            _session_var.reset(token)
 
-async def get_container() -> Container:
+async def get_container() -> AsyncGenerator[Container, None]:
     container = Container(
         config=get_config()
     )

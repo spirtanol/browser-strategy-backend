@@ -1,5 +1,5 @@
 import asyncio
-from typing import Callable, Optional
+from typing import AsyncContextManager, AsyncGenerator, Callable, Optional
 from logging import Logger
 
 from app.repositories.user import UserRepository, UserEntity
@@ -14,16 +14,19 @@ class ClientUserService:
         self, 
         user_repository: UserRepository,
         redis_factory: Callable[[], Redis],
-        life_state_pusher: LifeStatePusher
+        life_state_pusher: LifeStatePusher,
+        transaction: Callable[[], AsyncContextManager[None]]
     ):
         self._user_repo = user_repository
         self._redis_factory = redis_factory
         self._state_pusher = life_state_pusher
-
+        self._transaction = transaction
+        
     async def find(self, id: int) -> Optional[UserEntity]:
-        return await self._user_repo.find(id)
+        async with self._transaction():
+            return await self._user_repo.find(id)
 
-    async def subscribe_to_updates(self, id: int, logger: Logger) -> str:
+    async def subscribe_to_updates(self, id: int, logger: Logger) -> AsyncGenerator[str, None]:
         redis = self._redis_factory()
         subscriber = redis.pubsub()
         channel_name = f'user:{id}'

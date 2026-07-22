@@ -19,14 +19,13 @@ def create_user(
     @helper.cleanup
     async def inner():
         async with get_context_container() as container:
-            async with container.transaction():
-                schema = CreateUserSchema(
-                    name=name,
-                    email=email,
-                    password=password
-                )
+            schema = CreateUserSchema(
+                name=name,
+                email=email,
+                password=password
+            )
 
-                user = await container.user_service.create(schema)
+            user = await container.user_service.create(schema)
 
-            print(f'Добавлен новый пользователь: {user.id} {user.email}')
+            print(f'Добавлен новый пользователь: {user.id} {user.name}')
     asyncio.run(inner())

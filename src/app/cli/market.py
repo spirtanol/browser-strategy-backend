@@ -1,7 +1,7 @@
 import asyncio
-import traceback
 from typing import Annotated
 
+from pydantic import ValidationError
 import typer, click
 
 from . import helper
@@ -42,6 +42,10 @@ def create_order(
             async with container.transaction():
                 user = await container.user_service.find(dto.owner_id)
 
+                if user is None:
+                    print(f'Пользователь {dto.owner_id} не найден')
+                    return
+
                 if not user.is_npc:
                     print('Нельзя создать ордер для не npc пользователя')
                     return
@@ -63,6 +67,10 @@ def remove_order(order_id: Annotated[int, typer.Argument(help='ID ордера')
                     return
 
                 owner = await container.user_service.find(order.owner_id)
+                
+                if owner is None:
+                    print(f'Владелец ордера {order_id} не найден')
+                    return
 
                 if not owner.is_npc:
                     print(f'Владелец ордера {order_id} не npc')

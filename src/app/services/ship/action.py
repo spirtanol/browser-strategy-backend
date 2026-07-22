@@ -1,15 +1,18 @@
-from typing import Optional
+from typing import AsyncContextManager, Callable, Optional
 
 from app.repositories.ship import ShipRepository
 from app.entities.ship import ShipEntity
 
 
 class ShipService:
-    def __init__(self, ship_repo: ShipRepository):
+    def __init__(self, ship_repo: ShipRepository, transaction: Callable[[], AsyncContextManager[None]]):
         self._ship_repo = ship_repo
-
+        self._transaction = transaction
+        
     async def find(self, id: int) -> Optional[ShipEntity]:
-        return await self._ship_repo.find(id)
+        async with self._transaction():
+            return await self._ship_repo.find(id)
 
     async def save(self, ship: ShipEntity):
-        await self._ship_repo.save([ship])
+        async with self._transaction():
+            await self._ship_repo.save([ship])

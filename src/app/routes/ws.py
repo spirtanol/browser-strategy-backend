@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from enum import Enum
 
 from pydantic import ValidationError
 from fastapi import (
@@ -21,7 +22,7 @@ from app.schemas.fleet import FleetStateOut
 
 logger = logging.getLogger("app.core.engine")
 
-def create_ws_router(prefix: str, tags: list[str]):
+def create_ws_router(prefix: str, tags: list[str | Enum]):
     router = APIRouter(
         prefix=prefix, 
         tags=tags,
@@ -34,17 +35,17 @@ def create_ws_router(prefix: str, tags: list[str]):
         user: UserEntity = Depends(get_ws_user)
     ):
             async with get_context_container() as container:
-                async with container.transaction():
-                    fleet = await container.client_fleet_service.find(fleet_id)
-                    if fleet is None:
-                        raise FleetNotFoundError(fleet_id)
-                    
-                    if fleet.owner_id != user.id:
-                        raise AuthError()
+                fleet = await container.client_fleet_service.find(fleet_id)
+                if fleet is None:
+                    raise FleetNotFoundError(fleet_id)
+                
+                if fleet.owner_id != user.id:
+                    raise AuthError()
 
                 await websocket.accept()
 
                 try:
+                    pending = []
                     redis_client = container.get_redis()
                     
                     fleets_last_state: dict[int, FleetStateOut] = {
@@ -96,8 +97,7 @@ def create_ws_router(prefix: str, tags: list[str]):
                                             action=request.action,
                                             params=request.params
                                         )
-                                        async with container.transaction():
-                                            await container.command_dispatcher_service.dispatch(command, user)
+                                        await container.command_dispatcher_service.dispatch(command, user)
                                 except ValidationError as e:
                                     logger.exception(f'Ошибка парса команды {str(e)}')
                                 except Exception as e:

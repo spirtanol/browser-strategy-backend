@@ -17,8 +17,19 @@ class MarketOrderRepository:
     async def find(self, id: int) -> Optional[MarketOrder]:
         session = self._session_factory()
         return await session.get(MarketOrder, id)
+
+    async def get_by_ids(self, ids: list[int]) -> list[MarketOrder]:
+        session = self._session_factory()
+        results = await session.scalars(sa.Select(MarketOrder).where(MarketOrder.id.in_(ids)))
+        return list(results.all())
     
-    async def get_by_platform_item_type_price(self, platform_id: int, item_name: str, order_type: MarketOrderType, price: int, for_update = False) -> list[MarketOrder]:
+    async def get_by_platform_item_type_price(
+        self, 
+        platform_id: int, 
+        item_name: str, 
+        order_type: MarketOrderType, price: int, 
+        for_update = False
+    ) -> list[MarketOrder]:
         session = self._session_factory()
         
         stmt = (sa.Select(MarketOrder)
@@ -36,17 +47,17 @@ class MarketOrderRepository:
             stmt = stmt.with_for_update()
 
         results = await session.scalars(stmt)
-        return results.all()
+        return list(results.all())
 
     async def get_by_platforms(self, platform_ids: list[int]) -> MarketDepth:
         session = self._session_factory()
 
         stmt_buy = (sa.Select(MarketOrder)
             .where(MarketOrder.platform_id.in_(platform_ids), MarketOrder.order_type == MarketOrderType.Buy)
-            .order_by(MarketOrderType.price.desc()))
+            .order_by(MarketOrder.price.desc()))
         stmt_sell = (sa.Select(MarketOrder)
             .where(MarketOrder.platform_id.in_(platform_ids), MarketOrder.order_type == MarketOrderType.Sell)
-            .order_by(MarketOrderType.price.asc()))
+            .order_by(MarketOrder.price.asc()))
 
         buy_results = await session.scalars(stmt_buy)
         buy_orders = buy_results.all()

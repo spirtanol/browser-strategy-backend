@@ -32,7 +32,7 @@ class AppSettings(BaseSettings):
     access_token_ttl: int = 60 * 24 # минуты
     refresh_token_ttl: int = 60 * 24 * 30 # минуты
     token_alg: str = "HS256"
-    secret_key: str = "supper_pupper_secret_key"
+    secret_key: str = Field(..., env='SECRET_KEY')
 
 
 class DevelopmentSettings(AppSettings):

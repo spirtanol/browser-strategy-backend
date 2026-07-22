@@ -1,5 +1,5 @@
 from logging import Logger
-from typing import Optional, Callable
+from typing import AsyncGenerator, Optional, Callable
 import asyncio
 
 from redis.asyncio import Redis
@@ -24,7 +24,7 @@ class ClientFleetService:
         fleet_raw = await redis.get(f'c_fleet:{id}')
         return FleetStateOut.model_validate_json(fleet_raw) if fleet_raw else None
 
-    async def subscribe_to_updates(self, id: int, logger: Logger) -> str:
+    async def subscribe_to_updates(self, id: int, logger: Logger) -> AsyncGenerator[str, None]:
         redis = self._redis_factory()
         subscriber = redis.pubsub()
         channel_name = f'fleet:{id}'

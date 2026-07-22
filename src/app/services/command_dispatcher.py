@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import AsyncContextManager, Callable
 
 from redis.asyncio import Redis
 
@@ -12,20 +12,23 @@ class CommandDispatcherService:
         self, 
         redis_factory: Callable[[], Redis],
         resolver_context: ResolverContext,
-        channel_name: str = 'commands',
+        transaction: Callable[[], AsyncContextManager[None]],
+        channel_name: str = 'commands'
     ):
         self._redis_factory = redis_factory
         self.channel_name = channel_name
         self._resolver_context = resolver_context
-
-    async def dispatch(self, command: GameCommand, user: UserEntity):
-        resolver, dto_class = get_resolver(command.action)
-        dto = dto_class.model_validate({'id': command.id, **command.params})
-        await resolver(self._resolver_context, user, dto)
+        self._transaction = transaction
         
-        redis_client = self._redis_factory()
+    async def dispatch(self, command: GameCommand, user: UserEntity):
+        async with self._transaction():
+            resolver, dto_class = get_resolver(command.action)
+            dto = dto_class.model_validate({'id': command.id, **command.params})
+            await resolver(self._resolver_context, user, dto)
+            
+            redis_client = self._redis_factory()
 
-        await redis_client.publish(
-            self.channel_name,
-            command.model_dump_json()
-        )
+            await redis_client.publish(
+                self.channel_name,
+                command.model_dump_json()
+            )

@@ -1,5 +1,5 @@
 from logging import Logger
-from typing import Optional, Callable
+from typing import AsyncGenerator, Optional, Callable
 import asyncio
 import json
 
@@ -19,7 +19,7 @@ class ClientShipService:
         self._redis_factory = redis_factory
         self._state_pusher = life_state_pusher
 
-    async def subscribe_to_updates(self, id: int, logger: Logger) -> str:
+    async def subscribe_to_updates(self, id: int, logger: Logger) -> AsyncGenerator[str, None]:
         redis = self._redis_factory()
         subscriber = redis.pubsub()
         channel_name = f'ship:{id}'

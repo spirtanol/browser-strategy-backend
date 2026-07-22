@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from passlib.context import CryptContext
 from jose import jwt, JWTError
@@ -20,7 +21,7 @@ def verify_password(plain: str, hashed: str) -> bool:
     return pwd_context.verify(plain, hashed)
 
 def create_token(alg: str, secret_key: str, dto: TokenSchema) -> AuthToken:
-    to_encode: Dict[str, Any] = {
+    to_encode: dict[str, Any] = {
         "sub": str(dto.user_id), 
         "iat": int(dto.iat.timestamp()), 
         "exp": int(dto.exp.timestamp()),

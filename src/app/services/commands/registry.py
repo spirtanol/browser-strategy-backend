@@ -11,7 +11,7 @@ from .resolvers.trade_resolver import trade_resolver
 from .resolvers.fishing_resolver import fishing_resolver
 
 
-COMMAND_CONFIG = {
+COMMAND_CONFIG: dict[str, dict] = {
     'move_to': {
         'dto': MoveToCommandParams,
         'resolver': fleet_command_resolver,

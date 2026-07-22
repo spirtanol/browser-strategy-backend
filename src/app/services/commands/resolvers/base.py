@@ -1,4 +1,4 @@
-from typing import Protocol, Optional
+from typing import Protocol
 
 from ..handlers.base import UserCommand
 from app.services.ship.client import ClientShipService
