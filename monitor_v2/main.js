@@ -18,12 +18,15 @@ class Logger {
  * Компонент Карточки Игрока
  */
 class UserCard {
-    constructor(containerId) {
+    constructor(containerId, onFleetSelect) {
         this.el = document.getElementById(containerId);
+        this.onFleetSelect = onFleetSelect;
+        this.selectedFleetId = null;
         this.ui = {
             name: this.el.querySelector('#userName'),
             id: this.el.querySelector('#userId'),
             money: this.el.querySelector('#userMoney'),
+            fleetsContainer: this.el.querySelector('#fleetsContainer'),
             rawBlock: this.el.querySelector('#userRawBlock'),
             toggleJsonBtn: this.el.querySelector('#toggleJsonBtn')
         };
@@ -54,6 +57,53 @@ class UserCard {
         this.ui.id.textContent = `ID: ${userData.id}`;
         this.ui.money.textContent = userData.money.toLocaleString();
         this.ui.rawBlock.textContent = rawJson;
+        this.updateFleets(userData.fleets);
+    }
+
+    setSelectedFleetId(fleetId) {
+        this.selectedFleetId = fleetId;
+        this._refreshSelectedHighlight();
+    }
+
+    updateFleets(fleets) {
+        if (!fleets || fleets.length === 0) {
+            this.ui.fleetsContainer.innerHTML = '<div style="color: #666; font-style: italic;">Флотилии отсутствуют</div>';
+            return;
+        }
+
+        let html = '';
+        fleets.forEach(fleet => {
+            const selectedClass = fleet.id === this.selectedFleetId ? ' selected' : '';
+            html += `
+                <div class="ship-card${selectedClass}" data-id="${fleet.id}">
+                    <span class="ship-name">${escapeHtml(fleet.name)} (${fleet.id})</span>
+                    <span class="ship-meta">Кораблей: ${fleet.ships_count}</span>
+                    <span class="ship-meta">X: ${fleet.position.x.toFixed(1)}, Y: ${fleet.position.y.toFixed(1)}</span>
+                </div>
+            `;
+        });
+        this.ui.fleetsContainer.innerHTML = html;
+        this._bindFleetClicks();
+    }
+
+    _refreshSelectedHighlight() {
+        const cards = this.ui.fleetsContainer.querySelectorAll('.ship-card');
+        cards.forEach(card => {
+            const id = parseInt(card.getAttribute('data-id'), 10);
+            card.classList.toggle('selected', id === this.selectedFleetId);
+        });
+    }
+
+    _bindFleetClicks() {
+        const cards = this.ui.fleetsContainer.querySelectorAll('.ship-card');
+        cards.forEach(card => {
+            card.onclick = () => {
+                const fleetId = parseInt(card.getAttribute('data-id'), 10);
+                if (this.onFleetSelect && !isNaN(fleetId)) {
+                    this.onFleetSelect(fleetId);
+                }
+            };
+        });
     }
 }
 
@@ -71,9 +121,7 @@ class CommandPanel {
     }
 
     setInitialTemplate(fleetId) {
-        if (!this.input.value) {
-            this.input.value = `{"action": "act_name", "params": {"fleet_id": ${fleetId}}}`;
-        }
+        this.input.value = `{"action": "act_name", "params": {"fleet_id": ${fleetId}}}`;
     }
 
     setSocket(ws) {
@@ -352,25 +400,38 @@ class ShipDetailCard {
  * Главный менеджер соединений и диспетчер данных
  */
 class ConnectionManager {
-    // Добавили shipDetailCard в конструктор
     constructor(logger, commandPanel, userCard, fleetCard, shipDetailCard) {
         this.tokenInput = document.getElementById('tokenInput');
-        this.fleetIdInput = document.getElementById('fleetIdInput');
         this.connectBtn = document.getElementById('connectBtn');
         
         this.logger = logger;
         this.commandPanel = commandPanel;
         this.userCard = userCard;
         this.fleetCard = fleetCard;
-        this.shipDetailCard = shipDetailCard; // Сохраняем ссылку на карточку деталей корабля
+        this.shipDetailCard = shipDetailCard;
         this.ws = null;
 
         this.connectBtn.onclick = () => this.connect();
-
-        this.commandPanel.setInitialTemplate(this.fleetIdInput.value.trim() || "1");
     }
 
-    // Метод для отправки экшена выбора корабля в сокет
+    selectFleet(fleetId) {
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+            this.logger.error("Ошибка: Нет активного соединения для выбора флотилии!");
+            return;
+        }
+
+        const actionPayload = {
+            action: "select_fleet",
+            fleet_id: fleetId
+        };
+
+        this.ws.send(JSON.stringify(actionPayload));
+        this.userCard.setSelectedFleetId(fleetId);
+        this.commandPanel.setInitialTemplate(fleetId);
+        this.resetShipDetail();
+        this.logger.info(`Запрошены данные флотилии ID: ${fleetId}`);
+    }
+
     selectShip(shipId) {
         if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
             this.logger.error("Ошибка: Нет активного соединения для выбора корабля!");
@@ -386,20 +447,31 @@ class ConnectionManager {
         this.logger.info(`Запрошены детальные данные для корабля ID: ${shipId}`);
     }
 
+    resetShipDetail() {
+        const el = this.shipDetailCard.el;
+        el.style.opacity = "0.5";
+        this.shipDetailCard.ui.name.textContent = "Корабль не выбран...";
+        this.shipDetailCard.ui.id.textContent = "ID: --";
+        this.shipDetailCard.ui.crew.textContent = "--";
+        this.shipDetailCard.ui.hp.textContent = "--";
+        this.shipDetailCard.ui.speed.textContent = "--";
+        this.shipDetailCard.ui.hunger.textContent = "--";
+        this.shipDetailCard.ui.weightFloat.textContent = "-- / --";
+        this.shipDetailCard.ui.power.textContent = "-- / --";
+        this.shipDetailCard.ui.volume.textContent = "-- / --";
+        this.shipDetailCard.ui.storage.innerHTML = '<li style="color: #666; font-style: italic;">Трюм пуст</li>';
+        this.shipDetailCard.ui.rawBlock.textContent = "{}";
+    }
+
     setToken(token) {
         this.tokenInput.value = token;
     }
 
     connect() {
         const token = this.tokenInput.value.trim();
-        const fleetId = this.fleetIdInput.value.trim();
 
         if (!token) {
             alert("Пожалуйста, сначала получите токен через форму входа!");
-            return;
-        }
-        if (!fleetId) {
-            alert("Пожалуйста, укажите ID флотилии!");
             return;
         }
 
@@ -407,13 +479,13 @@ class ConnectionManager {
             this.ws.close();
         }
 
-        this.logger.info(`Установка соединения для флотилии ${fleetId}...`);
+        this.logger.info("Установка WebSocket соединения...");
         
-        const wsUrl = `ws://localhost:4000/ws/${fleetId}?token=${encodeURIComponent(token)}`;
+        const wsUrl = `ws://localhost:4000/ws/?token=${encodeURIComponent(token)}`;
         this.ws = new WebSocket(wsUrl);
 
         this.ws.onopen = () => {
-            this.logger.info(`Соединение установлено (Флотилия ${fleetId})`);
+            this.logger.info("Соединение установлено");
             this.commandPanel.setSocket(this.ws);
         };
 
@@ -444,7 +516,6 @@ class ConnectionManager {
                 } else if (data.entity_type === 'user') {
                     this.userCard.update(data, JSON.stringify(data, null, 2));
                 } else if (data.entity_type === 'ship') {
-                    // Обработка новой сущности - деталей корабля
                     this.shipDetailCard.update(data, JSON.stringify(data, null, 2));
                 }
             }
@@ -457,29 +528,22 @@ class ConnectionManager {
 // Инициализация приложения при загрузке DOM
 document.addEventListener("DOMContentLoaded", () => {
     const logger = new Logger('log');
-    const userCard = new UserCard('userCard');
-    const shipDetailCard = new ShipDetailCard('shipDetailCard'); // Создаем карточку деталей корабля
-    
-    // Создаем менеджер (пока передаем null вместо fleetCard, так как они ссылаются друг на друга)
-    const connectionManager = new ConnectionManager(logger, commandPanelInstancePlaceHolder(), userCard, null, shipDetailCard);
-    
-    // Инициализируем карточку флотилии, прокидывая колбэк на выбор корабля
+    const shipDetailCard = new ShipDetailCard('shipDetailCard');
+    const commandPanel = new CommandPanel(logger);
+
+    const connectionManager = new ConnectionManager(logger, commandPanel, null, null, shipDetailCard);
+
+    const userCard = new UserCard('userCard', (fleetId) => {
+        connectionManager.selectFleet(fleetId);
+    });
     const fleetCard = new FleetCard('fleetCard', (shipId) => {
         connectionManager.selectShip(shipId);
     });
-    
-    // Связываем fleetCard обратно с менеджером
-    connectionManager.fleetCard = fleetCard;
 
-    const commandPanel = new CommandPanel(logger);
-    connectionManager.commandPanel = commandPanel; // обновляем панель команд
+    connectionManager.userCard = userCard;
+    connectionManager.fleetCard = fleetCard;
 
     new AuthPanel(logger, (token) => {
         connectionManager.setToken(token);
     });
-    
-    // Вспомогательная заглушка для первого прохода конструктора менеджера
-    function commandPanelInstancePlaceHolder() {
-        return { setInitialTemplate: () => {} };
-    }
 });

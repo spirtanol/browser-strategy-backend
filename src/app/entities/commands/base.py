@@ -8,10 +8,12 @@ if TYPE_CHECKING:
 
 
 class BaseCommand:
+    name: str
+    queue: CommandQueue
+
     def __init__(self):
         self.finished = False
         self.is_dependent = False
-        self.queue: Optional[CommandQueue] = None
 
     def update(self, dt: float):
         pass

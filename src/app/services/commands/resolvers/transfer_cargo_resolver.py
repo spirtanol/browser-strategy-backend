@@ -12,12 +12,30 @@ async def transfer_cargo_resolver(
 ):
     await fleet_command_resolver(context, user, dto)
 
-    fleet = await context.client_fleet_service.find(dto.fleet_id)
-    if fleet is None:
+    fleet_a = await context.client_fleet_service.find(dto.fleet_id)
+    if fleet_a is None:
         raise CommandResolvingError(dto, f'Флота {dto.fleet_id} не существует')
 
-    ship_ids = {ship.id for ship in fleet.ships}
+    ships_a = {ship.id for ship in fleet_a.ships}
     errors = []
+
+    if dto.target_fleet_id is None:
+        ship_ids = ships_a
+    else:
+        if dto.target_fleet_id == dto.fleet_id:
+            raise CommandResolvingError(dto, f'Флот {dto.fleet_id} не может быть целью сам для себя')
+
+        fleet_b = await context.client_fleet_service.find(dto.target_fleet_id)
+        if fleet_b is None:
+            raise CommandResolvingError(dto, f'Флота {dto.target_fleet_id} не существует')
+
+        if fleet_b.owner_id != user.id:
+            raise CommandResolvingError(
+                dto,
+                f'Пользователь {user.id} не владеет флотом {fleet_b.id}',
+            )
+
+        ship_ids = ships_a | {ship.id for ship in fleet_b.ships}
 
     for op in dto.operations:
         if op['item_name'] not in ItemMap:
@@ -27,10 +45,10 @@ async def transfer_cargo_resolver(
             errors.append(f'Нельзя передать груз с корабля {op["from_ship_id"]} на него же')
 
         if op['from_ship_id'] not in ship_ids:
-            errors.append(f'Корабль {op["from_ship_id"]} не входит во флот {fleet.id}')
+            errors.append(f'Корабль {op["from_ship_id"]} не входит в доступные флоты')
 
         if op['to_ship_id'] not in ship_ids:
-            errors.append(f'Корабль {op["to_ship_id"]} не входит во флот {fleet.id}')
+            errors.append(f'Корабль {op["to_ship_id"]} не входит в доступные флоты')
 
     if errors:
         raise CommandResolvingError(dto, '\n'.join(errors))

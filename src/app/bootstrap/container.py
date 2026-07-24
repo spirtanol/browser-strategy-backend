@@ -206,6 +206,7 @@ class Container:
             user_repo=self.user_repository,
             life_state_registry=self.life_state_registry,
             transaction=self.transaction,
+            fleet_service=self.core_fleet_service,
         )
 
     @cached_property

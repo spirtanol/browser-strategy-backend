@@ -7,6 +7,7 @@ from app.repositories.user import UserRepository
 from app.entities.user import UserEntity
 from app.services.lifestate.registry import LifeStateRegistry
 from app.schemas.user import UserStateOut
+from src.app.services.fleet.core import CoreFleetService
 
 
 class CoreUserService:
@@ -14,19 +15,22 @@ class CoreUserService:
         self, 
         user_repo: UserRepository, 
         life_state_registry: LifeStateRegistry,
-        transaction: Callable[[], AsyncContextManager[None]]
+        transaction: Callable[[], AsyncContextManager[None]],
+        fleet_service: CoreFleetService,
     ):
         self._user_repo = user_repo
         self._identity_map: dict[int, UserEntity] = {}
         self._life_state_registry = life_state_registry
         self._transaction = transaction
         self._loaded: bool = False
+        self._fleet_service = fleet_service
 
     async def load(self):
         async with self._transaction():
             entities = await self._user_repo.get_all()
             self._identity_map = {ent.id: ent for ent in entities}
             self._loaded = True
+
     def get_all(self) -> list[UserEntity]:
         return list[UserEntity](self._identity_map.values())
 
@@ -41,7 +45,8 @@ class CoreUserService:
 
         for entity in self.get_all():
             if self._life_state_registry.is_alive_user(entity.id):
-                dto = UserStateOut.from_entity(entity)
+                fleets = self._fleet_service.get_by_owner(entity.id)
+                dto = UserStateOut.from_entity(entity, fleets)
                 pipe.publish(f'user:{entity.id}', dto.model_dump_json())
     
     def find(self, id: int) -> Optional[UserEntity]:

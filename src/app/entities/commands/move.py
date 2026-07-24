@@ -44,5 +44,5 @@ class MoveCommand(BaseCommand):
             fleet.moving_state = MovingState.Idle
 
     def cancel(self):
-        if fleet.moving_state == MovingState.Move:
-            fleet.moving_state = MovingState.Idle
+        if self.fleet.moving_state == MovingState.Move:
+            self.fleet.moving_state = MovingState.Idle

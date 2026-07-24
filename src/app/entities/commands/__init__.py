@@ -6,4 +6,5 @@ from . import (
     undocking,
     fishing,
     transfer_cargo,
+    reassign_ships,
 )

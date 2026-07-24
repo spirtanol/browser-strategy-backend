@@ -12,12 +12,13 @@ from app.services.platform.core import CorePlatformService
 from app.services.site.core import CoreSiteService
 from app.entities.world import World, Awaitable
 from app.services.market import MarketService
+from app.defs.enums import MovingState
+from app.entities.fleet import FleetEntity
 
 if TYPE_CHECKING:
-    from app.entities.fleet import FleetEntity
     from app.entities.platform import PlatformEntity
     from app.entities.user import UserEntity
-
+    from app.entities.site import SiteEntity
 
 logger = logging.getLogger("app.core.engine")
 
@@ -73,7 +74,9 @@ class Engine(World):
         async with redis.pipeline() as pipe:
             async with self.transaction_manager():
                 await self.user_service.load()
-                await self.fleet_service.load(self, pipe)
+                await self.fleet_service.load(pipe)
+                for fleet in self.fleet_service.get_all():
+                    fleet.bind_to_world(self)
                 await self.platform_service.load(self)
                 await self.site_service.load(self)
                 await pipe.execute()
@@ -163,3 +166,16 @@ class Engine(World):
     
     def get_market_service(self) -> MarketService:
         return self.market_service
+
+    async def create_fleet(self, owner_id: int, x: float, y: float) -> FleetEntity:
+        n = self.fleet_service.count_by_owner(owner_id) + 1
+        fleet = FleetEntity(name=f'Fleet {n}')
+        fleet.owner_id = owner_id
+        fleet.pos.xy(x, y)
+        fleet._move_state = MovingState.Idle
+        await self.fleet_service.add_fleet(fleet)
+        fleet.bind_to_world(self)
+        return fleet
+
+    def remove_fleet(self, fleet: FleetEntity) -> None:
+        self.fleet_service.remove_fleet(fleet)

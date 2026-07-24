@@ -112,6 +112,17 @@ class ShipEntity:
     def max_volume(self) -> float:
         return self.hull.get_volume(self.in_slots, self.ex_slots)
 
+    def fit_quantity(self, item_type: StorageItemType, quantity: int) -> int:
+        if quantity <= 0:
+            return 0
+        free_volume = self.max_volume - self.volume
+        if free_volume < item_type.volume * quantity:
+            quantity = int(free_volume / item_type.volume)
+        free_floatage = self.floatage - self.weight
+        if free_floatage < item_type.weight * quantity:
+            quantity = int(free_floatage / item_type.weight)
+        return max(quantity, 0)
+
     @property
     def max_speed(self) -> float:
         thrust = self.storage.get_net(NetworkResource.Thrust).value

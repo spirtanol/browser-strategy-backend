@@ -1,11 +1,10 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional, Any
+from typing import Optional, Any
 
 import app.defs.consts as Consts
 from app.defs.enums import ObjectType
 from .base import BaseCommand
 from .factory import register_command
-from ..world import World
 from app.utils import xy
 from .move import MoveCommand
 
@@ -37,11 +36,34 @@ class MoveToObjectCommand(BaseCommand):
             case ObjectType.Site:
                 site = self.world.find_site(self.obj_id)
                 if site is None:
-                    self.finished
+                    self.finished = True
                     return
 
                 destX = site.x
                 destY = site.y
+            case ObjectType.Fleet:
+                target = self.world.find_fleet(self.obj_id)
+                if target is None or target.id == fleet.id:
+                    self.finished = True
+                    return
+
+                distance = xy.distance(fleet.pos.x, fleet.pos.y, target.pos.x, target.pos.y)
+                if distance <= Consts.ObjectRadius:
+                    self.finished = True
+                    return
+
+                step = min(Consts.ObjectRadius * 0.95, distance)
+                x, y = xy.point_at_distance(
+                    fleet.pos.x,
+                    fleet.pos.y,
+                    target.pos.x,
+                    target.pos.y,
+                    step,
+                )
+                move_command = MoveCommand(x, y)
+                move_command.is_dependent = True
+                self.queue.add(move_command, True)
+                return
             case _:
                 self.finished = True
                 return
@@ -53,11 +75,11 @@ class MoveToObjectCommand(BaseCommand):
             return
 
         x, y = xy.point_at_distance(
-            destX, 
-            destY, 
-            fleet.pos.x, 
-            fleet.pos.y, 
-            Consts.ObjectRadius * 0.9
+            destX,
+            destY,
+            fleet.pos.x,
+            fleet.pos.y,
+            Consts.ObjectRadius * 0.9,
         )
         move_command = MoveCommand(x, y)
         move_command.is_dependent = True

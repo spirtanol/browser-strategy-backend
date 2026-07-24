@@ -144,6 +144,11 @@ textarea { background: #252526; color: #ce9178; border: 1px solid #333; padding:
     border-color: #007acc;
 }
 
+.ships-list .ship-card.selected {
+    background: #2d2d30;
+    border-color: #007acc;
+}
+
 /* Стили для списка трюма */
 .storage-list {
     margin: 5px 0 0 0;

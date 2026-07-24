@@ -19,6 +19,8 @@ class CommandQueue:
         command.queue = self
         if on_top:
             self.cancel_depends()
+            if len(self.queue) > 0:
+                self.queue[0].cancel()
             self.queue.appendleft(command)
         else:
             self.queue.append(command)

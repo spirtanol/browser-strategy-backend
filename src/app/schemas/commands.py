@@ -13,5 +13,8 @@ class GameCommandRequest(BaseModel):
 class SelectShipCommand(BaseModel):
     ship_id: int
 
+class SelectFleetCommand(BaseModel):
+    fleet_id: int
+
 class GameCommand(GameCommandRequest):
     id: str = Field(default_factory=generate_6char_id)

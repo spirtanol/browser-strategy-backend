@@ -24,9 +24,6 @@
         <div class="panel">
             <strong>Токен:</strong>
             <input type="text" id="tokenInput" placeholder="Токен заполнится после входа..." style="width: 150px; flex-grow: 1;">
-            
-            <strong>Fleet ID:</strong>
-            <input type="number" id="fleetIdInput" value="1" min="1" style="width: 60px; text-align: center;">
 
             <button id="connectBtn">Подключиться</button>
         </div>
@@ -48,6 +45,11 @@
                             <span id="userMoney">0</span>
                         </div>
                         <button class="toggle-json-btn" id="toggleJsonBtn">JSON</button>
+                    </div>
+                    <div style="margin-top: 10px; border-top: 1px solid #3e3e42; padding-top: 10px;">
+                        <strong>Флотилии:</strong>
+                        <div id="fleetsContainer" class="ships-list">
+                        </div>
                     </div>
                     <pre class="user-raw-json" id="userRawBlock">{}</pre>
                 </div>

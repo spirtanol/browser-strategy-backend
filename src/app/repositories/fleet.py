@@ -6,6 +6,7 @@ from app.entities.fleet import FleetEntity
 from app.core.db import AsyncSession
 from app.models.fleet import FleetModel
 from app.mappers.fleet import FleetMapper
+from app.models.ship import ShipModel
 
 
 class FleetRepository:
@@ -34,7 +35,7 @@ class FleetRepository:
             self._mapper.to_model_data(entity)
             for entity in entities if entity.id != 0
         ]
-        
+
         new_entities = [e for e in entities if e.id == 0]
         for new_e in new_entities:
             model = FleetModel(
@@ -48,7 +49,23 @@ class FleetRepository:
             await session.execute(sa.update(FleetModel), data)
             await session.flush()
 
+    async def remove(self, ids: list[int]):
+        session = self._session_factory()
+        await session.execute(sa.delete(FleetModel).where(FleetModel.id.in_(ids)))
+        await session.flush()
+
     async def is_empty(self) -> bool:
         session = self._session_factory()
         q = sa.Select(sa.Exists(FleetModel))
         return not bool(await session.scalar(q))
+
+    async def remove_empty(self):
+        session = self._session_factory()
+        await session.execute(
+            sa.delete(FleetModel).where(
+                ~sa.exists(
+                    sa.select(ShipModel.id).where(ShipModel.fleet_id == FleetModel.id)
+                )
+            )
+        )
+        await session.flush()

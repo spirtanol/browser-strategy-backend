@@ -17,6 +17,10 @@ class MarketOrderType(enum.IntEnum):
     Buy = 1
     Sell = 2
 
+class ShipReassignOpType(enum.IntEnum):
+    Attach = 1
+    Detach = 2
+
 class SiteType(enum.IntEnum):
     STABLE = 1
     TEMPORARY = 2

@@ -22,6 +22,9 @@ class LifeStateRegistry:
     def is_alive_fleet(self, id: int) -> bool:
         return id in self._fleet_ids
 
+    def remove_fleet(self, id: int):
+        self._fleet_ids.remove(id)
+
     def add_user(self, id: int):
         self._user_ids.add(id)
 

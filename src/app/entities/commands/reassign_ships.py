@@ -2,38 +2,35 @@ from __future__ import annotations
 from typing import TypedDict, Optional, Any, TYPE_CHECKING
 
 import app.defs.consts as Consts
-from app.defs.enums import ObjectType, MovingState
+from app.defs.enums import ObjectType, MovingState, ShipReassignOpType
 from app.utils import xy
 from .base import BaseCommand
 from .factory import register_command
 from .move_to_object import MoveToObjectCommand
-from app.defs.items import MAP as ItemMap
 
 if TYPE_CHECKING:
     from ..fleet import FleetEntity
-    from ..ship import ShipEntity
 
 
-class TransferOperation(TypedDict):
-    from_ship_id: int
-    to_ship_id: int
-    item_name: str
-    quantity: int
+class ShipReassignOp(TypedDict):
+    ship_id: int
+    op: ShipReassignOpType
 
 
 @register_command()
-class TransferCargoCommand(BaseCommand):
-    name = 'transfer_cargo'
+class ReassignShipsCommand(BaseCommand):
+    name = 'reassign_ships'
 
     def __init__(
         self,
         target_fleet_id: Optional[int] = None,
-        operations: Optional[list[TransferOperation]] = None,
+        operations: Optional[list[ShipReassignOp]] = None,
     ):
         super().__init__()
         self.target_fleet_id = target_fleet_id
         self.operations = operations if operations is not None else []
         self.stage = 0
+        self.is_process = False
         if not self.operations:
             self.finished = True
 
@@ -51,12 +48,11 @@ class TransferCargoCommand(BaseCommand):
         self.stage = data.get('stage', 0)
 
     def update(self, dt: float):
-        if self.finished:
+        if self.finished or self.is_process:
             return
 
         if self.target_fleet_id is None:
-            self._apply(self.fleet, None)
-            self.finished = True
+            self._start_apply_split()
             return
 
         match self.stage:
@@ -91,52 +87,60 @@ class TransferCargoCommand(BaseCommand):
                     self.finished = True
                     return
 
-                self._apply(self.fleet, target)
+                self._start_apply_transfer(target)
+
+    def _start_apply_split(self):
+        async def apply():
+            fleet_a = self.fleet
+            new_fleet = await self.world.create_fleet(
+                fleet_a.owner_id, fleet_a.pos.x, fleet_a.pos.y
+            )
+
+            for op in self.operations:
+                if op['op'] != ShipReassignOpType.Detach:
+                    continue
+                ship = fleet_a.ships.get(op['ship_id'])
+                if ship is None:
+                    continue
+                fleet_a.remove_ship(ship)
+                new_fleet.add_ship(ship)
+
+            if not fleet_a.ships:
+                self.world.remove_fleet(fleet_a)
+
+            self.finished = True
+
+        self.world.add_async_action(apply)
+        self.is_process = True
+
+    def _start_apply_transfer(self, target: FleetEntity):
+        async def apply():
+            fleet_a = self.fleet
+            fleet_b = self.world.find_fleet(target.id)
+            if fleet_b is None or fleet_b.owner_id != fleet_a.owner_id:
                 self.finished = True
+                return
 
-    def _find_ship(
-        self,
-        ship_id: int,
-        fleet_a: FleetEntity,
-        fleet_b: Optional[FleetEntity],
-    ) -> Optional[ShipEntity]:
-        ship = fleet_a.ships.get(ship_id)
-        if ship is not None:
-            return ship
-        if fleet_b is not None:
-            return fleet_b.ships.get(ship_id)
-        return None
+            for op in self.operations:
+                if op['op'] == ShipReassignOpType.Detach:
+                    ship = fleet_a.ships.get(op['ship_id'])
+                    if ship is None:
+                        continue
+                    fleet_a.remove_ship(ship)
+                    fleet_b.add_ship(ship)
+                elif op['op'] == ShipReassignOpType.Attach:
+                    ship = fleet_b.ships.get(op['ship_id'])
+                    if ship is None:
+                        continue
+                    fleet_b.remove_ship(ship)
+                    fleet_a.add_ship(ship)
 
-    def _apply(self, fleet_a: FleetEntity, fleet_b: Optional[FleetEntity]):
-        for op in self.operations:
-            item_type = ItemMap.get(op['item_name'], None)
-            if item_type is None:
-                continue
+            if not fleet_a.ships:
+                self.world.remove_fleet(fleet_a)
+            if not fleet_b.ships:
+                self.world.remove_fleet(fleet_b)
 
-            from_ship_id = op['from_ship_id']
-            to_ship_id = op['to_ship_id']
-            if from_ship_id == to_ship_id:
-                continue
+            self.finished = True
 
-            from_ship = self._find_ship(from_ship_id, fleet_a, fleet_b)
-            to_ship = self._find_ship(to_ship_id, fleet_a, fleet_b)
-            if from_ship is None or to_ship is None:
-                continue
-
-            have = from_ship.storage.get_amount(item_type)
-            left = op['quantity']
-            if left == -1:
-                left = have
-            else:
-                left = min(left, have)
-
-            if left <= 0:
-                continue
-
-            left = to_ship.fit_quantity(item_type, left)
-
-            if left <= 0:
-                continue
-
-            from_ship.storage.pull(item_type, left)
-            to_ship.storage.push(item_type, left)
+        self.world.add_async_action(apply)
+        self.is_process = True

@@ -5,12 +5,14 @@ from .handlers.dock_to_platform import dock_to_platform_command, DockToPlatformC
 from .handlers.trade import TradeCommandParams, trade_command
 from .handlers.fishing import FishingCommandParams, fishing_command
 from .handlers.transfer_cargo import TransferCargoCommandParams, transfer_cargo_command
+from .handlers.reassign_ships import ReassignShipsCommandParams, reassign_ships_command
 from .resolvers.fleet_resolver import fleet_command_resolver
 from .resolvers.move_to_object_resolver import move_to_object_resolver
 from .resolvers.dock_to_platform_resolver import dock_to_platform_resolver
 from .resolvers.trade_resolver import trade_resolver
 from .resolvers.fishing_resolver import fishing_resolver
 from .resolvers.transfer_cargo_resolver import transfer_cargo_resolver
+from .resolvers.reassign_ships_resolver import reassign_ships_resolver
 
 
 COMMAND_CONFIG: dict[str, dict] = {
@@ -48,5 +50,10 @@ COMMAND_CONFIG: dict[str, dict] = {
         'dto': TransferCargoCommandParams,
         'resolver': transfer_cargo_resolver,
         'handler': transfer_cargo_command
+    },
+    'reassign_ships': {
+        'dto': ReassignShipsCommandParams,
+        'resolver': reassign_ships_resolver,
+        'handler': reassign_ships_command
     }
 }

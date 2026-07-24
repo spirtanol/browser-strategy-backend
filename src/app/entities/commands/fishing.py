@@ -103,17 +103,10 @@ class FishingCommand(BaseCommand):
                             items_fit = limit_left
                             no_space = True
 
-                    items_volume = items_fit * ItemDefs.Fish.volume
-                    free_space = ship.max_volume - ship.volume
-                    if free_space < items_volume:
-                        items_fit = int(free_space / ItemDefs.Fish.volume)
+                    fitted = ship.fit_quantity(ItemDefs.Fish, items_fit)
+                    if fitted < items_fit:
                         no_space = True
-                        
-                    items_weight = items_fit * ItemDefs.Fish.weight
-                    free_space = ship.floatage - ship.weight
-                    if free_space < items_weight:
-                        items_fit = int(free_space / ItemDefs.Fish.weight)
-                        no_space = True
+                    items_fit = fitted
 
                     if items_fit > 0:
                         ship.storage.push(ItemDefs.Fish, items_fit)

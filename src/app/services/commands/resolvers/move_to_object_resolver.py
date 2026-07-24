@@ -6,7 +6,7 @@ from .fleet_resolver import fleet_command_resolver
 
 async def move_to_object_resolver(context: ResolverContext, user: UserEntity, dto: MoveToObjectCommandParams):
     await fleet_command_resolver(context, user, dto)
-    
+
     match dto.obj_type:
         case ObjectType.Platform:
             if await context.client_platform_service.exists(dto.obj_id):
@@ -14,6 +14,10 @@ async def move_to_object_resolver(context: ResolverContext, user: UserEntity, dt
         case ObjectType.Site:
             if await context.client_site_service.exists(dto.obj_id):
                 return
+        case ObjectType.Fleet:
+            if dto.obj_id == dto.fleet_id:
+                raise CommandResolvingError(dto, f'Флот {dto.fleet_id} не может двигаться к себе')
+            if await context.client_fleet_service.find(dto.obj_id) is not None:
+                return
 
     raise CommandResolvingError(dto, f'Объект {dto.obj_type}:{dto.obj_id} не существует')
-    
