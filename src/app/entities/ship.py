@@ -3,11 +3,8 @@ from typing import Optional, TYPE_CHECKING, Callable
 import math
 
 from .storage import Storage, StorageItemType
-from .resources_pool import ResourcesPool
 from app.defs.items import MEAL, NetworkResource
 from .ship_modules.base import BaseShipModule, UpdatePhase
-from .ship_modules import factory as ModuleFactory
-from app.utils.str_helpers import generate_random_string
 from app.defs.enums import MovingState
 from app.defs.consts import HungerCycle, EnvironmentSpeedFactor
 from .ship_hull import ShipHull

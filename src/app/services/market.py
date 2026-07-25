@@ -36,7 +36,7 @@ class MarketService:
         async with self._transaction():
             return await self._market_order_repo.get_by_platforms([platform_id])
 
-    async def create(self, dto: CreateMarketOrderSchema) -> MarketOrder:
+    async def create(self, dto: CreateMarketOrderSchema, *, checkpoint: bool = False) -> MarketOrder:
         async with self._transaction():
             order = MarketOrder(
                 owner_id=dto.owner_id,
@@ -48,13 +48,30 @@ class MarketService:
             )
 
             await self._market_order_repo.save(order)
+            if checkpoint:
+                await self._market_order_repo.ensure_snapshot(order, is_new=True)
 
             return order
 
-    async def remove(self, order: MarketOrder):
+    async def remove(self, order: MarketOrder, *, checkpoint: bool = False):
         async with self._transaction():
+            if checkpoint:
+                await self._market_order_repo.ensure_snapshot(order)
+            else:
+                await self._market_order_repo.delete_snapshot(order.id)
             await self._market_order_repo.delete(order)
 
-    async def save(self, order: MarketOrder):
+    async def save(self, order: MarketOrder, *, checkpoint: bool = False):
         async with self._transaction():
+            if checkpoint:
+                await self._market_order_repo.ensure_snapshot(order)
             await self._market_order_repo.save(order)
+
+    async def restore_from_snapshots(self) -> None:
+        async with self._transaction():
+            await self._market_order_repo.apply_snapshots()
+            await self._market_order_repo.clear_snapshots()
+
+    async def clear_snapshots(self) -> None:
+        async with self._transaction():
+            await self._market_order_repo.clear_snapshots()

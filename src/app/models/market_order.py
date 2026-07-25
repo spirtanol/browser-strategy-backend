@@ -1,7 +1,5 @@
-import enum
-
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import ForeignKey, Integer, Index, String
+from sqlalchemy import ForeignKey, Integer, Index, String, Boolean
 
 from .base import BaseModel
 from app.defs.enums import MarketOrderType
@@ -22,3 +20,18 @@ class MarketOrder(BaseModel):
         Index('ix_market_orders_platform_type_price', 'platform_id', 'order_type', 'price'),
         Index('ix_market_orders_platform_item_type_price', 'platform_id', 'item_name', 'order_type', 'price'),
     )
+
+
+class MarketOrderSnapshot(BaseModel):
+    """Checkpoint ордера на момент первого изменения после полного сейва сущностей."""
+
+    __tablename__ = 'market_order_snapshots'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=False)
+    owner_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    platform_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    order_type: Mapped[MarketOrderType] = mapped_column(Integer, nullable=False)
+    price: Mapped[int] = mapped_column(Integer, nullable=False)
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+    item_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    is_new: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

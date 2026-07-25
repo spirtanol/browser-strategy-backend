@@ -63,7 +63,7 @@ class TradeCommand(BaseCommand):
                 return
             case 1:
                 async def trade_ops():
-                    owner = self.world.find_user(fleet.owner_id)
+                    fleet_owner = self.world.find_user(fleet.owner_id)
                     market_service = self.world.get_market_service()
 
                     for op in self.operations:
@@ -101,16 +101,16 @@ class TradeCommand(BaseCommand):
                             order_owner = self.world.find_user(order.owner_id)
 
                             if op['op_type'] == MarketOrderType.Buy:
-                                owner.money -= money
+                                fleet_owner.money -= money
                                 ship.storage.push(item_type, diff)
                             else:
-                                owner.money += money
+                                fleet_owner.money += money
                                 ship.storage.pull(item_type, diff)
                                 
                             if not order_owner.is_npc:
                                 order.quantity -= diff
                                 # todo: Передача товара на склад, зачисление денег для игрока
-                                await market_service.save(order)
+                                await market_service.save(order, checkpoint=True)
                             
                     self.finished = True
                 self.world.add_async_action(trade_ops)

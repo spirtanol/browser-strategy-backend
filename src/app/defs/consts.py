@@ -4,4 +4,4 @@ DayLenght: int = 24 * 60 * 60
 HarvestingCycle: float = 15 * 60
 SiteRecoveryCycle: float = 24 * 60 * 60
 HungerCycle: float = 60 * 60 * 8
-EnvironmentSpeedFactor: float = 1.0 - 0.2
+EnvironmentSpeedFactor: float = 3.0 #1.0 - 0.2

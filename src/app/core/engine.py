@@ -56,6 +56,7 @@ class Engine(World):
             await self.fleet_service.save(pipe)
             await self.platform_service.save()
             await self.site_service.save()
+            await self.market_service.clear_snapshots()
 
     async def run(self):
         if self.is_running:
@@ -73,6 +74,7 @@ class Engine(World):
 
         async with redis.pipeline() as pipe:
             async with self.transaction_manager():
+                await self.market_service.restore_from_snapshots()
                 await self.user_service.load()
                 await self.fleet_service.load(pipe)
                 for fleet in self.fleet_service.get_all():
