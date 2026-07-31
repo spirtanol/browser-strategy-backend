@@ -326,6 +326,7 @@ class ShipDetailCard {
             hp: this.el.querySelector('#shipDetailHp'),
             speed: this.el.querySelector('#shipDetailSpeed'),
             hunger: this.el.querySelector('#shipDetailHunger'),
+            repairBuffer: this.el.querySelector('#shipDetailRepairBuffer'),
             weightFloat: this.el.querySelector('#shipDetailWeightFloat'),
             power: this.el.querySelector('#shipDetailPower'),
             volume: this.el.querySelector('#shipDetailVolume'),
@@ -365,6 +366,7 @@ class ShipDetailCard {
         this.ui.hp.textContent = shipData.hp;
         this.ui.speed.textContent = `${shipData.max_speed.toFixed(1)} / ${shipData.max_speed.toFixed(1)}`; // Текущая/Макс (если текущей в схеме нет, пишем макс)
         this.ui.hunger.textContent = shipData.hunger.toFixed(4);
+        this.ui.repairBuffer.textContent = shipData.repair_buffer.toFixed(4);
         this.ui.weightFloat.textContent = `${shipData.weight.toFixed(1)} / ${shipData.floatage}`;
         
         // Потребление / Выработка из кортежа power
@@ -456,6 +458,7 @@ class ConnectionManager {
         this.shipDetailCard.ui.hp.textContent = "--";
         this.shipDetailCard.ui.speed.textContent = "--";
         this.shipDetailCard.ui.hunger.textContent = "--";
+        this.shipDetailCard.ui.repairBuffer.textContent = "--";
         this.shipDetailCard.ui.weightFloat.textContent = "-- / --";
         this.shipDetailCard.ui.power.textContent = "-- / --";
         this.shipDetailCard.ui.volume.textContent = "-- / --";

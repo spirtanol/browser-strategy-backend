@@ -14,6 +14,7 @@ class HullConfig:
     floatage_per_size: float
     weight_per_size: float
     health_per_size: int
+    wear_per_hour: float
 
 
 BASE_HULL = HullConfig(
@@ -24,7 +25,8 @@ BASE_HULL = HullConfig(
     volume_per_external_slot=3.0,
     floatage_per_size=30000.0,
     weight_per_size=10000.0,
-    health_per_size=100
+    health_per_size=100,
+    wear_per_hour=0.005,
 )
 
 def get_hull_config(name: str) -> HullConfig:

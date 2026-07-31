@@ -37,7 +37,7 @@ class GeneratorModule(BaseShipModule):
     def update(self, dt: float, phase: UpdatePhase):
         if self.active:
             if phase == UpdatePhase.Anounce:
-                output = self.module_def.output if self.fuel > 0 else 0.0
+                output = self.module_def.output * self.efficiency if self.fuel > 0 else 0.0
                 self.ship.storage.get_net(NetworkResource.PowerOut).add(self.id, output)
                 self.ship.storage.get_net(NetworkResource.Weight).add(self.id, self.fuel * MDO.weight)
             elif phase == UpdatePhase.Execution:

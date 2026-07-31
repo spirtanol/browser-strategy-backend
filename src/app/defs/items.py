@@ -24,11 +24,17 @@ MDO = StorageItemType(
     weight=0.875,
     volume=0.0001,
 )
+WeldingKit = StorageItemType(
+    name='WeldingKit',
+    weight=75.0,
+    volume=0.075,
+)
 
 MAP = {
     MEAL.name: MEAL,
     Fish.name: Fish,
-    MDO.name: MDO
+    MDO.name: MDO,
+    WeldingKit.name: WeldingKit,
 }
 
 class NetworkResource(enum.StrEnum):
@@ -38,3 +44,4 @@ class NetworkResource(enum.StrEnum):
     Weight = 'wght'
     HP = 'hp'
     HarvestingFish = 'har_fish'
+    WorkIn = 'wrk_i' # Потребление рабочей силы

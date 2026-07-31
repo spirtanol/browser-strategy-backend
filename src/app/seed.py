@@ -40,9 +40,7 @@ async def seed_world(container: Container):
         create_user_dto = CreateUserSchema(
             name='player 1',
             email='player@test.com',
-            password='12qwaszx',
-            is_npc=False
-        )
+            password='12qwaszx'        )
 
         user = await container.user_service.create(create_user_dto)
         user.money = 1000
@@ -64,6 +62,7 @@ async def seed_world(container: Container):
             # Создаем модули корабля
             fishing_ship.hull.hull_config = BASE_HULL
             fishing_ship.hull.size = 1
+            fishing_ship.hull_hp = float(fishing_ship.hull.get_max_health())
             
             fishing_ship.add_module(ModuleFactory.create(ModuleDefs.BaseGenerator.name, fishing_ship.get_counter(), active=True))
             fishing_ship.add_module(ModuleFactory.create(ModuleDefs.BaseEngine.name, fishing_ship.get_counter(), active=True))
@@ -78,7 +77,8 @@ async def seed_world(container: Container):
 
         cargo_ship.hull.hull_config = BASE_HULL
         cargo_ship.hull.size = 2
-
+        cargo_ship.hull_hp = float(cargo_ship.hull.get_max_health())
+        
         cargo_ship.add_module(ModuleFactory.create(ModuleDefs.BaseGenerator.name, cargo_ship.get_counter(), active=True))
         cargo_ship.add_module(ModuleFactory.create(ModuleDefs.BaseEngine.name, cargo_ship.get_counter(), active=True))
 
@@ -86,6 +86,7 @@ async def seed_world(container: Container):
         
         cargo_ship.storage.push(ItemDefs.MEAL, 1000)
         cargo_ship.storage.push(ItemDefs.MDO, 10000)
+        cargo_ship.storage.push(ItemDefs.WeldingKit, 20)
 
         await container.ship_service.save(cargo_ship)
 
@@ -104,6 +105,14 @@ async def seed_world(container: Container):
             price=20,
             quantity=1000,
             item_name=ItemDefs.MDO.name
+        ))
+        await container.market_service.create(CreateMarketOrderSchema(
+            owner_id=npc_user.id,
+            platform_id=platform.id,
+            order_type=MarketOrderType.Sell,
+            price=200,
+            quantity=1000,
+            item_name=ItemDefs.WeldingKit.name
         ))
         await container.market_service.create(CreateMarketOrderSchema(
             owner_id=npc_user.id,

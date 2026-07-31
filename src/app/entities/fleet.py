@@ -81,6 +81,10 @@ class FleetEntity(MapEntity):
             value += ship.storage.get_net(resource).value
         return value
 
+    def on_resource_extracted(self, fraction: float):
+        for ship in self.ships.values():
+            ship.on_resource_extracted(fraction)
+
     @override
     def get_type(self) -> ObjectType:
         return ObjectType.Fleet

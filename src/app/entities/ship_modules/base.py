@@ -11,8 +11,6 @@ if TYPE_CHECKING:
     from ..ship import ShipEntity
 
 
-T = TypeVar('T', bound='BaseShipModule')
-
 class UpdatePhase(enum.IntEnum):
     Anounce = 1
     Balance = 2
@@ -26,7 +24,7 @@ class BaseShipModule:
     ):
         self.id = id
         self.module_def = module_def
-        self._hp = module_def.hp
+        self._hp: float = float(module_def.hp)
         self.ship: Optional[ShipEntity] = None
 
     def to_dict(self) -> dict[str, Any]:
@@ -36,7 +34,7 @@ class BaseShipModule:
         }
 
     @classmethod
-    def from_dict(cls, module_def: ModuleDef, data: dict) -> T:
+    def from_dict(cls, module_def: ModuleDef, data: dict) -> "BaseShipModule":
         instance = cls(module_def, 0)
         instance.load_state(data)
         return instance
@@ -49,9 +47,29 @@ class BaseShipModule:
     def ex_slots(self) -> int:
         return self.module_def.ex_slots
 
+    @property
+    def max_hp(self) -> int:
+        return int(self.module_def.hp)
+
+    @property
+    def efficiency(self) -> float:
+        if self.ship is None or self.module_def.hp <= 0:
+            return 0.0
+        return self.ship.work_efficiency * (self.hp / float(self.module_def.hp))
+
+    @property
+    def hp(self) -> float:
+        return self._hp
+
+    @hp.setter
+    def hp(self, value: float):
+        self._hp = max(0.0, min(value, float(self.max_hp)))
+        if self.ship:
+            self.ship.storage.get_net(NetworkResource.HP).add(self.id, self._hp)
+
     def load_state(self, state: dict[str, Any]):
         self.id = state.get('id', 0)
-        self._hp = state.get('hp', self.module_def.hp)
+        self._hp = float(state.get('hp', self.module_def.hp))
 
     def update(self, dt: float, phase: UpdatePhase):
         pass
@@ -59,7 +77,8 @@ class BaseShipModule:
     def attached(self, ship: ShipEntity):
         self.ship = ship
         self.ship.storage.get_net(NetworkResource.Weight).add(self.id, self.module_def.weight)
-        self.ship.storage.get_net(NetworkResource.HP).add(self.id, self.module_def.hp)
+        self.ship.storage.get_net(NetworkResource.HP).add(self.id, self._hp)
+        self.ship.storage.get_net(NetworkResource.WorkIn).add(self.id, self.module_def.work_consumption)
         self.on_attached(ship)
 
     def detached(self):
@@ -76,4 +95,7 @@ class BaseShipModule:
         pass
 
     def ship_moving_state_changed(self, old_state: MovingState, new_state: MovingState):
+        pass
+
+    def on_resource_extracted(self, fraction: float):
         pass

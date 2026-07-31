@@ -3,27 +3,29 @@ from app.defs.ship_hull import HullConfig, get_hull_config
 
 
 class ShipHull:
+    size: int
+
     def __init__(self, size: int = 0, hull_config: Optional[HullConfig] = None):
-        self.size: int = 0
+        self.size = size
         self.hull_config: Optional[HullConfig] = hull_config
 
     def to_dict(self):
         return {
             'conf': self.hull_config.name,
-            'size': self.size,
+            'size': self.size
         }
 
     def from_dict(self, data: dict[str, Any]):
         self.hull_config = get_hull_config(data.get('conf', 'base'))
         self.size = data.get('size', 1)
 
-    def get_weight(self) -> int:
+    def get_weight(self) -> float:
         return self.hull_config.weight_per_size * self.size
 
-    def get_floatage(self) -> int:
+    def get_floatage(self) -> float:
         return self.hull_config.floatage_per_size * self.size
 
-    def get_health(self) -> int:
+    def get_max_health(self) -> int:
         return self.hull_config.health_per_size * self.size
 
     def get_slots(self) -> tuple[int, int]:

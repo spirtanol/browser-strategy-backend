@@ -41,13 +41,18 @@ class EngineModule(BaseShipModule):
 
         if self.active:
             if phase == UpdatePhase.Anounce:
-                thrust = self.__def.thrust if self.fuel > 0 else 0
+                thrust = self.__def.thrust * self.efficiency if self.fuel > 0 else 0
                 self.ship.storage.get_net(NetworkResource.Thrust).add(self.id, thrust)
             elif phase == UpdatePhase.Execution:
+                state = self.ship.fleet.moving_state
+                if state in (MovingState.Move, MovingState.Maneuvering, MovingState.Fishing):
+                    damage = self.max_hp * self.__def.wear_per_hour * (dt / 3600.0)
+                    self.hp = self.hp - damage
+
                 consumption = 0
-                if self.ship.fleet.moving_state == MovingState.Move:
+                if state == MovingState.Move:
                     consumption = self.__def.fuel_consumption * dt / 3600.0
-                elif self.ship.fleet.moving_state in (MovingState.Maneuvering, MovingState.Fishing):
+                elif state in (MovingState.Maneuvering, MovingState.Fishing):
                     consumption = self.__def.fuel_consumption * dt / 7200.0
                     
                 if self.fuel <= consumption or self.fuel <= 0:

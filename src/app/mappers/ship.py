@@ -11,17 +11,21 @@ class ShipMapper:
             'c': entity.counter,
             'crew': entity.crew,
             'hunger': entity.hunger,
+            'repair_buffer': entity.repair_buffer,
             'storage': entity.storage.to_dict(),
             'modules': [{'def': m.module_def.name, 'data': m.to_dict()} for m in entity.modules],
             'hull': entity.hull.to_dict(),
+            'hull_hp': entity.hull_hp
         }
 
     def _load_state(self, entity: ShipEntity, data: dict[str, Any]):
         entity.counter = data.get('c', 0)
         entity.crew = data.get('crew', 0)
         entity.hunger = data.get('hunger', 0.0)
+        entity.repair_buffer = float(data.get('repair_buffer', 0.0))
         entity.storage.from_dict(data.get('storage', {}))
         entity.hull.from_dict(data.get('hull', {}))
+        entity.hull_hp = float(data.get('hull_hp', entity.hull.get_max_health()))
         entity.modules = []
 
         # Грузим модули

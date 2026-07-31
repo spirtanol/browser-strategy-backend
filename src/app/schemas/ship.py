@@ -28,10 +28,11 @@ class ShipDetailInfoOut(EntityState):
     id: int
     name: str
     hunger: float
+    repair_buffer: float
     crew: int
     storage: dict[str, int]
     weight: float
-    floatage: int
+    floatage: float
     hp: int
     power: tuple[float, float]
     max_speed: float
@@ -45,6 +46,7 @@ class ShipDetailInfoOut(EntityState):
             name=ship.name,
             crew=ship.crew,
             hunger=ship.hunger,
+            repair_buffer=ship.repair_buffer,
             storage=ship.storage.get_contents(),
             weight=ship.weight,
             floatage=ship.floatage,

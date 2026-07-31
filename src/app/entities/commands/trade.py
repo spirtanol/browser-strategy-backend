@@ -1,14 +1,11 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, TypedDict, Optional, Any
+from typing import TypedDict, Optional, Any
 
 from .base import BaseCommand
 from .factory import register_command
 from app.defs.enums import ObjectType, MarketOrderType
 from .docking import DockingCommand
 from app.defs.items import MAP as ItemMap
-
-if TYPE_CHECKING:
-    from ..platform import PlatformEntity
 
 
 class TradeOperation(TypedDict):

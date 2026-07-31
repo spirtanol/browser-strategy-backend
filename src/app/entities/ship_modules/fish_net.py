@@ -34,7 +34,9 @@ class FishNetModule(BaseShipModule):
         self.active = data.get('active', True)
 
     def update(self, dt: float, phase: UpdatePhase):
-        pass
+        if phase == UpdatePhase.Anounce and self.active:
+            harvest = self.__def.harvest_power * self.efficiency
+            self.ship.storage.get_net(NetworkResource.HarvestingFish).add(self.id, harvest)
 
     def ship_moving_state_changed(self, old_state: MovingState, new_state: MovingState):
         if new_state == MovingState.Fishing:
@@ -43,7 +45,12 @@ class FishNetModule(BaseShipModule):
             self.ship.storage.get_net(NetworkResource.PowerIn).remove(self.id)
 
     def on_attached(self, ship: ShipEntity):
-        self.ship.storage.get_net(NetworkResource.HarvestingFish).add(self.id, self.__def.harvest_power)
+        self.update(0.0, UpdatePhase.Anounce)
 
     def on_detached(self):
         self.ship.storage.get_net(NetworkResource.HarvestingFish).remove(self.id)
+
+    def on_resource_extracted(self, fraction: float):
+        if not self.active or fraction <= 0:
+            return
+        self.hp = self.hp - self.max_hp * self.__def.wear_per_cycle * fraction

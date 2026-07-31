@@ -116,6 +116,8 @@ class FishingCommand(BaseCommand):
                     if no_space:
                         self._finished_targets.add(ship_id)
 
+                fleet.on_resource_extracted(1.0)
+
             for fill_limit in self.fill_limits:
                 if fill_limit['ship_id'] not in self._finished_targets:
                     return
@@ -127,4 +129,6 @@ class FishingCommand(BaseCommand):
 
     def cancel(self):
         if self.fleet.moving_state == MovingState.Fishing:
+            if self._progress > 0:
+                self.fleet.on_resource_extracted(self._progress)
             self.fleet.moving_state = MovingState.Idle
