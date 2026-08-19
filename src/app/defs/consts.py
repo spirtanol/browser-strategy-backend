@@ -8,3 +8,4 @@ EnvironmentSpeedFactor: float = 3.0 #1.0 - 0.2
 RepairPerCrewMember: float = 5.0
 RepairCycle: float = 60 * 60 # 1 hour
 WeldingKitHp: float = 100.0  # 1 набор → 100 HP
+HungerThreshold: float = 2.0

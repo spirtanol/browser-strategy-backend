@@ -6,7 +6,14 @@ from .storage import Storage, StorageItemType
 from app.defs.items import MEAL, WeldingKit, NetworkResource
 from .ship_modules.base import BaseShipModule, UpdatePhase
 from app.defs.enums import MovingState
-from app.defs.consts import HungerCycle, EnvironmentSpeedFactor, RepairPerCrewMember, RepairCycle, WeldingKitHp
+from app.defs.consts import (
+    HungerCycle, 
+    EnvironmentSpeedFactor, 
+    RepairPerCrewMember, 
+    RepairCycle, 
+    WeldingKitHp, 
+    HungerThreshold
+)
 from .ship_hull import ShipHull
 
 if TYPE_CHECKING:
@@ -63,6 +70,12 @@ class ShipEntity:
             if have > 0:
                 self.hunger -= have / self.crew
                 write_off()
+            elif self.hunger >= HungerThreshold:
+                self.crew -= 1
+                if self.crew <= 0:
+                    self.hunger = 0.0
+                    return
+                self.hunger = 1.0
 
     def _needs_repair(self) -> bool:
         if self.hull_hp < self.hull.get_max_health():
