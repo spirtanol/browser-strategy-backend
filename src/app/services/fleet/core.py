@@ -9,6 +9,7 @@ from app.core.exceptions import ServiceNotLoadedError
 from ..ship.core import CoreShipService
 from app.core.exceptions import FleetNotFoundError
 from app.schemas.fleet import FleetStateOut
+from app.entities.world import World
 
 
 class CoreFleetService:
@@ -35,13 +36,14 @@ class CoreFleetService:
             pipe.set(f'c_fleet:{entity.id}', dto.model_dump_json(), ex=self._save_interval + 10)
             entity.cached = True
 
-    async def load(self, pipe: Pipeline):
+    async def load(self, pipe: Pipeline, world: World):
         async with self._transaction():
             await self.repository.remove_empty()
             entities = await self.repository.get_all()
             self._identity_map.clear()
             for entity in entities:
                 self._identity_map[entity.id] = entity
+                entity.bind_to_world(world)
 
             await self._ship_service.load()
             ships = self._ship_service.get_all()
@@ -59,11 +61,13 @@ class CoreFleetService:
         return list(self._identity_map.values())
 
     async def save(self, pipe: Optional[Pipeline]):
+        if not self._loaded:
+            return
+
         async with self._transaction():
             await self._ship_service.save()
 
-            if self._loaded:
-                await self.repository.save(self.get_all())
+            await self.repository.save(self.get_all())
 
             if self._pending_removed:
                 await self.repository.remove(list(self._pending_removed.keys()))

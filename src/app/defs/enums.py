@@ -5,7 +5,8 @@ class ObjectType(enum.IntEnum):
     Platform = 1
     Site = 2
     Fleet = 3
-
+    Area = 4
+    
 class MovingState(enum.IntEnum):
     Idle = 1
     Move = 2

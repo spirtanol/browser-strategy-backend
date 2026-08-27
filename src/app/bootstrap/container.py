@@ -34,6 +34,10 @@ from app.services.fleet.core import CoreFleetService, FleetRepository
 from app.services.fleet.action import FleetService
 from app.services.fleet.client import ClientFleetService
 from app.services.market import MarketService, MarketOrderRepository
+from app.mappers.area import AreaMapper
+from app.repositories.area import AreaRepository
+from app.services.area.core import CoreAreaService
+from app.services.area.action import AreaService
 
 
 _session_var: ContextVar[AsyncSession | None] = ContextVar("session", default=None)
@@ -49,6 +53,31 @@ class ResolverContextImpl(ResolverContext):
 class Container:
     def __init__(self, config: AppSettings):
         self.config = config
+
+    @cached_property
+    def area_mapper(self) -> AreaMapper:
+        return AreaMapper()
+
+    @cached_property
+    def area_repository(self) -> AreaRepository:
+        return AreaRepository(
+            session_factory=self.get_session,
+            mapper=self.area_mapper
+        )
+
+    @cached_property
+    def core_area_service(self) -> CoreAreaService:
+        return CoreAreaService(
+            repository=self.area_repository,
+            transaction=self.transaction
+        )
+
+    @cached_property
+    def area_service(self) -> AreaService:
+        return AreaService(
+            repository=self.area_repository,
+            transaction=self.transaction
+        )
 
     @cached_property
     def resolver_context(self) -> ResolverContext:
@@ -284,15 +313,15 @@ class Container:
             redis_factory=self.get_redis
         )
 
+    def get_redis(self, decode_responses=True) -> Redis:
+        return get_redis(self.config.redis_url, decode_responses)
+
     def get_session(self) -> AsyncSession:
         session = _session_var.get()
         if session is None:
             raise RuntimeError("Сессия не инициализирована. Вызовите метод внутри контекста `transaction()`")
 
         return session
-
-    def get_redis(self, decode_responses=True) -> Redis:
-        return get_redis(self.config.redis_url, decode_responses)
 
     @asynccontextmanager
     async def transaction(self) -> AsyncGenerator[None]:

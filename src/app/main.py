@@ -33,6 +33,7 @@ async def _run():
             user_service=container.core_user_service,
             platform_service=container.core_platform_service,
             site_service=container.core_site_service,
+            area_service=container.core_area_service,
             transaction_manager=container.transaction,
             save_interval=config.save_interval,
             market_service=container.market_service,

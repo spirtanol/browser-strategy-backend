@@ -1,4 +1,3 @@
-import enum
 from typing import Any
 
 from sqlalchemy.orm import Mapped, mapped_column

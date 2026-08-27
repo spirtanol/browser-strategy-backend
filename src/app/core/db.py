@@ -36,20 +36,6 @@ def get_session_maker(engine: AsyncEngine):
         expire_on_commit=False,
     )   
 
-async def get_session(session_maker) -> AsyncGenerator[AsyncSession, None]:
-    async with session_maker() as session:
-        try:
-            yield session
-            
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
-        finally:
-            await session.close()
-
-get_context_session = asynccontextmanager(get_session)
-
 @lru_cache
 def get_redis(redis_url: str, decode_responses: bool) -> Redis:
     redis = Redis.from_url(redis_url, decode_responses=decode_responses)

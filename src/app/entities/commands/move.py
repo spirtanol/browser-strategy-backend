@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from .base import BaseCommand
 from .factory import register_command

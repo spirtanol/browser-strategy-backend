@@ -3,15 +3,16 @@ from typing import Optional, override, TYPE_CHECKING, Callable
 
 from .base import MapEntity
 from .commands.command_queue import CommandQueue
-from .world import World
 from app.utils import xy
 from app.defs.enums import MovingState, ObjectType
 from .anchor_point import AnchorPointEntity
 from app.defs.items import NetworkResource, StorageItemType
+from app.defs.consts import AreaRadius
 
 if TYPE_CHECKING:
     from .ship import ShipEntity
-
+    from .area import AreaEntity
+    from .world import World
 
 class FleetEntity(MapEntity):
     def __init__(self, id: int = 0, name: str = ''):
@@ -25,6 +26,7 @@ class FleetEntity(MapEntity):
         self.attached_to_type: Optional[ObjectType] = None
         self.ships: dict[int, ShipEntity] = {}
         self.cached: bool = False
+        self.area: Optional[AreaEntity] = None
 
     @property
     def moving_state(self) -> MovingState:
@@ -44,6 +46,16 @@ class FleetEntity(MapEntity):
         for ship in self.ships.values():
             ship.update(dt)
         self.command_queue.update(dt)
+        
+        if self.moving_state == MovingState.Move:
+            if self.area is None:
+                area = self.world.get_area_at(self.pos.x, self.pos.y)
+                if area is not None:
+                    area.bind_fleet(self)
+            else:
+                distance = self.pos.distance_to(self.area.x, self.area.y)
+                if distance > AreaRadius:
+                    self.area.unbind_fleet(self)
 
     @property
     def max_speed(self) -> float:
@@ -108,3 +120,10 @@ class FleetEntity(MapEntity):
                 self.ships[ship_id].storage.pull(item_type, q)
                 
         return (amount - left, write_off)
+
+    @override
+    def bind_to_world(self, world: World):
+        super().bind_to_world(world)
+        area = world.get_area_at(self.pos.x, self.pos.y)
+        if area is not None:
+            area.bind_fleet(self)

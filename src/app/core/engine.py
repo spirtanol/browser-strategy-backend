@@ -14,11 +14,15 @@ from app.entities.world import World, Awaitable
 from app.services.market import MarketService
 from app.defs.enums import MovingState
 from app.entities.fleet import FleetEntity
+from app.services.area.core import CoreAreaService
+from app.utils import xy
+from app.defs.consts import AreaRadius
 
 if TYPE_CHECKING:
     from app.entities.platform import PlatformEntity
     from app.entities.user import UserEntity
     from app.entities.site import SiteEntity
+    from app.entities.area import AreaEntity
 
 logger = logging.getLogger("app.core.engine")
 
@@ -31,6 +35,7 @@ class Engine(World):
         user_service: CoreUserService,
         platform_service: CorePlatformService,
         site_service: CoreSiteService,
+        area_service: CoreAreaService,
         transaction_manager: Callable[[], AsyncContextManager[None]],
         save_interval: float,
         market_service: MarketService,
@@ -40,6 +45,7 @@ class Engine(World):
         self.user_service = user_service
         self.platform_service = platform_service
         self.site_service = site_service
+        self.area_service = area_service
         self.is_running = False
         self.dt_multiplier = dt_multiplier
         self.tick_duration = float(tick_duration)
@@ -52,6 +58,7 @@ class Engine(World):
 
     async def _save(self, pipe: Optional[Pipeline]):
         async with self.transaction_manager():
+            await self.area_service.save()
             await self.user_service.save()
             await self.fleet_service.save(pipe)
             await self.platform_service.save()
@@ -75,10 +82,9 @@ class Engine(World):
         async with redis.pipeline() as pipe:
             async with self.transaction_manager():
                 await self.market_service.restore_from_snapshots()
+                await self.area_service.load(self)
                 await self.user_service.load()
-                await self.fleet_service.load(pipe)
-                for fleet in self.fleet_service.get_all():
-                    fleet.bind_to_world(self)
+                await self.fleet_service.load(pipe, self)
                 await self.platform_service.load(self)
                 await self.site_service.load(self)
                 await pipe.execute()
@@ -100,17 +106,21 @@ class Engine(World):
                         await asyncio.gather(*(asyncio.create_task(act()) for act in self._async_actions))
                     self._async_actions.clear()
                 
-                users = self.user_service.get_all()
-                for user in users:
-                    user.update(dt)
-
                 platforms = self.platform_service.get_all()
                 for platform in platforms:
                     platform.update(dt)
 
+                users = self.user_service.get_all()
+                for user in users:
+                    user.update(dt)
+
                 sites = self.site_service.get_all()
                 for site in sites:
                     site.update(dt)
+
+                areas = self.area_service.get_all()
+                for area in areas:
+                    area.update(dt)
                 
                 redis = self.redis_factory()
 
@@ -181,3 +191,13 @@ class Engine(World):
 
     def remove_fleet(self, fleet: FleetEntity) -> None:
         self.fleet_service.remove_fleet(fleet)
+    
+    def find_area(self, id: int) -> Optional[AreaEntity]:
+        return self.area_service.find(id)
+
+    def get_area_at(self, x: float, y: float) -> Optional[AreaEntity]:
+        areas = self.area_service.get_all()
+        for area in areas:
+            if xy.distance(area.x, area.y, x, y) <= AreaRadius:
+                return area
+        return None

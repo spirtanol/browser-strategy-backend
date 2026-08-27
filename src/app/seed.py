@@ -6,6 +6,7 @@ from app.entities.ship import ShipEntity
 from app.entities.platform import PlatformEntity
 from app.entities.site import SiteEntity
 from app.entities.fleet import FleetEntity
+from app.entities.area import AreaEntity
 from app.defs import modules as ModuleDefs, items as ItemDefs
 from app.entities.ship_modules import factory as ModuleFactory
 from app.schemas.user import CreateUserSchema, CreateNpcSchema
@@ -17,6 +18,13 @@ from app.defs.ship_hull import BASE_HULL
 
 async def seed_world(container: Container):
     async with container.transaction():
+        # Создаем область
+        area = AreaEntity()
+        area.name = 'Area 0'
+        area.x = 0.0
+        area.y = 0.0
+        await container.area_service.save(area)
+
         # Создаем npc
         create_npc_dto = CreateNpcSchema(name='NPC')
 

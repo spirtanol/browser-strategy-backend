@@ -8,7 +8,6 @@ from .world import World
 class BaseEntity(ABC):
     def __init__(self):
         self.id: int = 0
-        self._world: Optional[World] = None
 
     def update(self, dt: float):
         pass

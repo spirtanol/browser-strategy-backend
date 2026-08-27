@@ -1,4 +1,5 @@
-from typing import Optional
+from __future__ import annotations
+from typing import Optional, TYPE_CHECKING, override
 
 from app.defs.enums import SiteType, SiteContent
 from app.defs.deposites import Restriction
@@ -6,6 +7,9 @@ from .anchor_point import AnchorPointEntity
 from app.defs.consts import SiteRecoveryCycle
 from app.defs.enums import ObjectType
 
+if TYPE_CHECKING:
+    from .area import AreaEntity
+    from .world import World
 
 class SiteEntity(AnchorPointEntity):
     def __init__(self, restriction: Optional[Restriction] = None):
@@ -16,6 +20,7 @@ class SiteEntity(AnchorPointEntity):
         self.site_content = SiteContent.Fish
         self.restriction = restriction
         self.reserve = restriction.max_reserve if restriction else 0.0
+        self.area: Optional[AreaEntity] = None
 
     @property
     def efficiency(self) -> float:
@@ -34,3 +39,10 @@ class SiteEntity(AnchorPointEntity):
 
     def get_type(self) -> ObjectType:
         return ObjectType.Site
+
+    @override
+    def bind_to_world(self, world: World):
+        super().bind_to_world(world)
+        area = world.get_area_at(self.x, self.y)
+        if area is not None:
+            area.bind_site(self)

@@ -78,7 +78,7 @@ class UserCard {
                 <div class="ship-card${selectedClass}" data-id="${fleet.id}">
                     <span class="ship-name">${escapeHtml(fleet.name)} (${fleet.id})</span>
                     <span class="ship-meta">Кораблей: ${fleet.ships_count}</span>
-                    <span class="ship-meta">X: ${fleet.position.x.toFixed(1)}, Y: ${fleet.position.y.toFixed(1)}</span>
+                    <span class="ship-meta">X: ${fleet.position.x.toFixed(1)}, Y: ${fleet.position.y.toFixed(1)} [${fleet.area ? `(${fleet.area.name})` : 'Тьма'}]</span>
                 </div>
             `;
         });
@@ -218,7 +218,8 @@ class FleetCard {
             command: this.el.querySelector('#fleetCommand'),
             shipsContainer: this.el.querySelector('#shipsContainer'),
             rawBlock: this.el.querySelector('#fleetRawBlock'),
-            toggleJsonBtn: this.el.querySelector('#toggleFleetJsonBtn')
+            toggleJsonBtn: this.el.querySelector('#toggleFleetJsonBtn'),
+            area: this.el.querySelector('#fleetArea')
         };
 
         this.movingStates = {
@@ -257,6 +258,7 @@ class FleetCard {
         this.ui.name.textContent = fleetData.name;
         this.ui.id.textContent = `ID: ${fleetData.id}`;
         this.ui.pos.textContent = `X: ${fleetData.position.x.toFixed(2)}, Y: ${fleetData.position.y.toFixed(2)}`;
+        this.ui.area.textContent = fleetData.area ? fleetData.area.name : "Тьма";
         this.ui.speed.textContent = fleetData.max_speed.toFixed(1);
         this.ui.state.textContent = this.movingStates[fleetData.moving_state] || `Неизвестно (${fleetData.moving_state})`;
         
