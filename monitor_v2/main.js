@@ -425,8 +425,9 @@ class ConnectionManager {
         }
 
         const actionPayload = {
-            action: "select_fleet",
-            fleet_id: fleetId
+            action: "subscribe",
+            entity_type: "fleet",
+            entity_id: fleetId
         };
 
         this.ws.send(JSON.stringify(actionPayload));
@@ -443,8 +444,9 @@ class ConnectionManager {
         }
         
         const actionPayload = {
-            action: "select_ship",
-            ship_id: shipId
+            action: "subscribe",
+            entity_type: "ship",
+            entity_id: shipId
         };
         
         this.ws.send(JSON.stringify(actionPayload));

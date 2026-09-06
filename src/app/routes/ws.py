@@ -15,8 +15,7 @@ from app.bootstrap.container import get_context_container
 from app.schemas.commands import (
     GameCommandRequest,
     GameCommand,
-    SelectShipCommand,
-    SelectFleetCommand,
+    SubscribeCommand,
 )
 from .deps import get_ws_user, UserEntity
 from app.schemas.fleet import FleetStateOut
@@ -79,47 +78,47 @@ def create_ws_router(prefix: str, tags: list[str | Enum]):
                             while True:
                                 data = await websocket.receive_json()
                                 try:
-                                    request = GameCommandRequest.model_validate(data)
-                                    if request.action == 'select_fleet':
-                                        select_command = SelectFleetCommand.model_validate(data)
-                                        fleet_id = select_command.fleet_id
+                                    if data.get('action') == 'subscribe':
+                                        subscribe_command = SubscribeCommand.model_validate(data)
+                                        if subscribe_command.entity_type == 'fleet':
+                                            fleet_id = subscribe_command.entity_id
 
-                                        if user_last_state is None:
-                                            continue
+                                            if user_last_state is None:
+                                                continue
 
-                                        if fleet_id not in (fleet.id for fleet in user_last_state.fleets):
-                                            continue
+                                            if fleet_id not in (fleet.id for fleet in user_last_state.fleets):
+                                                continue
 
-                                        if fleet_state_task:
-                                            fleet_state_task.cancel()
-                                            fleet_state_task = None
+                                            if fleet_state_task:
+                                                fleet_state_task.cancel()
+                                                fleet_state_task = None
 
-                                        if ship_state_task:
-                                            ship_state_task.cancel()
-                                            ship_state_task = None
+                                            if ship_state_task:
+                                                ship_state_task.cancel()
+                                                ship_state_task = None
 
-                                        selected_fleet_id = fleet_id
-                                        fleet_state_task = asyncio.create_task(fleet_state_loop(fleet_id))
-                                    elif request.action == 'select_ship':
-                                        select_command = SelectShipCommand.model_validate(data)
-                                        ship_id = select_command.ship_id
-                                        
-                                        if selected_fleet_id is None:
-                                            continue
+                                            selected_fleet_id = fleet_id
+                                            fleet_state_task = asyncio.create_task(fleet_state_loop(fleet_id))
+                                        elif subscribe_command.entity_type == 'ship':
+                                            if selected_fleet_id is None:
+                                                continue
 
-                                        fleet_last_state = fleets_last_state.get(selected_fleet_id, None)
-                                        if fleet_last_state is None:
-                                            continue
+                                            fleet_last_state = fleets_last_state.get(selected_fleet_id, None)
+                                            if fleet_last_state is None:
+                                                continue
 
-                                        if ship_id not in (ship.id for ship in fleet_last_state.ships):
-                                            continue
+                                            ship_id = subscribe_command.entity_id
 
-                                        if ship_state_task:
-                                            ship_state_task.cancel()
-                                            ship_state_task = None
+                                            if ship_id not in (ship.id for ship in fleet_last_state.ships):
+                                                continue
 
-                                        ship_state_task = asyncio.create_task(ship_state_loop(ship_id))
+                                            if ship_state_task:
+                                                ship_state_task.cancel()
+                                                ship_state_task = None
+
+                                            ship_state_task = asyncio.create_task(ship_state_loop(ship_id))
                                     else:
+                                        request = GameCommandRequest.model_validate(data)
                                         command = GameCommand(
                                             action=request.action,
                                             params=request.params
