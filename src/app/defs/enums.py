@@ -30,3 +30,13 @@ class SiteContent(enum.IntEnum):
     Fish = 1
     Ferrite = 2
     Pyrozine = 3
+
+class JournalEmitterType(enum.IntEnum):
+    Fleet = 1
+    Ship = 2
+    Platform = 3
+
+class JournalSeverity(enum.IntEnum):
+    Info = 1
+    Warning = 2
+    Dangerous = 3

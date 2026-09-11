@@ -5,6 +5,7 @@ from .base import BaseCommand
 from .factory import register_command
 from .undocking import UndockingCommand
 from app.defs.enums import MovingState
+from app.defs.journal import move_arrived, move_started
 
 
 @register_command()
@@ -38,10 +39,14 @@ class MoveCommand(BaseCommand):
             return
 
         delta = fleet.max_speed / 3600.0 * dt
+        just_started = fleet.moving_state != MovingState.Move
         fleet.moving_state = MovingState.Move
         if fleet.pos.move_to(self.x, self.y, delta):
             self.finished = True
             fleet.moving_state = MovingState.Idle
+            self.world.emit_journal_event(move_arrived(fleet, self.x, self.y))
+        elif just_started:
+            self.world.emit_journal_event(move_started(fleet, self.x, self.y))
 
     def cancel(self):
         if self.fleet.moving_state == MovingState.Move:

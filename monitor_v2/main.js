@@ -78,7 +78,7 @@ class UserCard {
                 <div class="ship-card${selectedClass}" data-id="${fleet.id}">
                     <span class="ship-name">${escapeHtml(fleet.name)} (${fleet.id})</span>
                     <span class="ship-meta">Кораблей: ${fleet.ships_count}</span>
-                    <span class="ship-meta">X: ${fleet.position.x.toFixed(1)}, Y: ${fleet.position.y.toFixed(1)} [${fleet.area ? `(${fleet.area.name})` : 'Тьма'}]</span>
+                    <span class="ship-meta">X: ${fleet.position.x.toFixed(1)}, Y: ${fleet.position.y.toFixed(1)} [${fleet.area ? `${fleet.area.name}` : 'Тьма'}]</span>
                 </div>
             `;
         });
@@ -401,10 +401,278 @@ class ShipDetailCard {
 }
 
 /**
+ * Компонент Карточки Журнала
+ */
+class JournalCard {
+    constructor(containerId) {
+        this.el = document.getElementById(containerId);
+        this.apiBase = 'http://localhost:4000/api';
+        this.eventTemplates = {
+            starvation_begins: 'Во флоте {fleet_name} ({fleet_id}) начался голод',
+            commands_complete: 'Флот {fleet_name} ({fleet_id}) выполнил команды',
+            move_started: 'Флот {fleet_name} ({fleet_id}) начал движение в точку ({x}, {y})',
+            move_arrived: 'Флот {fleet_name} ({fleet_id}) прибыл в точку ({x}, {y})',
+            dock_started: 'Флот {fleet_name} ({fleet_id}) швартуется к платформе {platform_name} ({platform_id})',
+            docked: 'Флот {fleet_name} ({fleet_id}) пришвартовался к платформе {platform_name} ({platform_id})'
+        };
+        this.severityNames = {
+            1: 'info',
+            2: 'warning',
+            3: 'dangerous'
+        };
+        this.ui = {
+            badge: this.el.querySelector('#journalUnreadBadge'),
+            list: this.el.querySelector('#journalList')
+        };
+        this._loadSeq = 0;
+        this._expandedIds = new Set();
+    }
+
+    _token() {
+        return document.getElementById('tokenInput').value.trim();
+    }
+
+    setUnread(n) {
+        this.ui.badge.textContent = String(n);
+        this.ui.badge.classList.toggle('has-unread', n > 0);
+    }
+
+    async load() {
+        const token = this._token();
+        if (!token) {
+            return;
+        }
+
+        const seq = ++this._loadSeq;
+        try {
+            const response = await fetch(`${this.apiBase}/journal?limit=50`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            const events = await response.json();
+            if (seq !== this._loadSeq) {
+                return;
+            }
+
+            this.el.style.opacity = '1';
+            this._render(events);
+
+            const unreadIds = events.filter(e => !e.is_read).map(e => e.id);
+            if (unreadIds.length === 0) {
+                this.setUnread(0);
+                return;
+            }
+
+            const readResponse = await fetch(`${this.apiBase}/journal/read`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ ids: unreadIds })
+            });
+            if (!readResponse.ok) {
+                throw new Error(`HTTP ${readResponse.status}`);
+            }
+            const unreadState = await readResponse.json();
+            if (seq !== this._loadSeq) {
+                return;
+            }
+            this.setUnread(unreadState.unread);
+        } catch (error) {
+            console.error('Ошибка загрузки журнала:', error);
+        }
+    }
+
+    _render(events) {
+        if (!events || events.length === 0) {
+            this.ui.list.innerHTML = '<div class="journal-empty">событий нет</div>';
+            return;
+        }
+
+        let html = '';
+        events.forEach(event => {
+            const severity = this.severityNames[event.severity] || 'info';
+            const { title, details } = this._formatDescription(event);
+            const time = this._formatTime(event.created_at);
+            const expanded = this._expandedIds.has(event.id);
+            const detailsBlock = details
+                ? `<button type="button" class="journal-details-btn" data-id="${event.id}">${expanded ? 'скрыть' : 'подробнее'}</button>
+                    <div class="journal-item-details${expanded ? ' open' : ''}">${details}</div>`
+                : '';
+            html += `
+                <div class="journal-item severity-${severity}${event.is_read ? '' : ' unread'}">
+                    <div class="journal-item-header">
+                        <span class="journal-item-title">${escapeHtml(title)}</span>
+                        <span class="journal-item-time">${escapeHtml(time)}</span>
+                    </div>
+                    ${detailsBlock}
+                </div>
+            `;
+        });
+        this.ui.list.innerHTML = html;
+        this._bindDetailsToggles();
+    }
+
+    _bindDetailsToggles() {
+        const buttons = this.ui.list.querySelectorAll('.journal-details-btn');
+        buttons.forEach(btn => {
+            btn.onclick = () => {
+                const id = parseInt(btn.getAttribute('data-id'), 10);
+                if (this._expandedIds.has(id)) {
+                    this._expandedIds.delete(id);
+                } else {
+                    this._expandedIds.add(id);
+                }
+                const item = btn.closest('.journal-item');
+                const details = item.querySelector('.journal-item-details');
+                const open = this._expandedIds.has(id);
+                details.classList.toggle('open', open);
+                btn.textContent = open ? 'скрыть' : 'подробнее';
+            };
+        });
+    }
+
+    _formatDescription(event) {
+        const params = event.params && typeof event.params === 'object' ? event.params : {};
+        if (event.event_type === 'move_to_obj_started' || event.event_type === 'move_to_obj_arrived') {
+            return { title: this._formatMoveToObject(params, event.event_type === 'move_to_obj_started'), details: null };
+        }
+        if (event.event_type === 'trade_started' || event.event_type === 'trade_completed') {
+            return this._formatTrade(params, event.event_type === 'trade_started');
+        }
+        const template = this.eventTemplates[event.event_type];
+        if (template) {
+            const title = template.replace(/\{(\w+)\}/g, (_, key) => {
+                const value = params[key];
+                if (value === undefined || value === null) {
+                    return '';
+                }
+                if (key === 'x' || key === 'y') {
+                    const n = Number(value);
+                    return Number.isFinite(n) ? n.toFixed(2) : String(value);
+                }
+                return String(value);
+            });
+            return { title, details: null };
+        }
+
+        const entries = Object.entries(params)
+            .map(([key, value]) => `${key}=${value}`)
+            .join(', ');
+        return { title: entries ? `${event.event_type}: ${entries}` : event.event_type, details: null };
+    }
+
+    _formatTrade(params, started) {
+        const fleet = `Флот ${params.fleet_name} (${params.fleet_id})`;
+        const platform = `платформе ${params.platform_name} (${params.platform_id})`;
+        if (started) {
+            return {
+                title: `${fleet} начал торговлю на ${platform}`,
+                details: this._formatTradeOpsDetails(params.operations || [])
+            };
+        }
+        const fills = params.fills || [];
+        const { buy, sell } = this._tradeTotals(fills);
+        const net = sell - buy;
+        const signed = net > 0 ? `+${net}` : String(net);
+        return {
+            title: `${fleet} завершил торговлю на ${platform}, баланс ${signed}`,
+            details: this._formatTradeFillsDetails(fills, buy, sell)
+        };
+    }
+
+    _tradeTotals(fills) {
+        let buy = 0;
+        let sell = 0;
+        fills.forEach(fill => {
+            const money = Number(fill.quantity) * Number(fill.price);
+            if (fill.op_type === 2) {
+                sell += money;
+            } else {
+                buy += money;
+            }
+        });
+        return { buy, sell };
+    }
+
+    _formatTradeOpsDetails(operations) {
+        if (!operations.length) {
+            return '<div class="journal-details-empty">без операций</div>';
+        }
+        const buys = operations.filter(op => op.op_type !== 2);
+        const sells = operations.filter(op => op.op_type === 2);
+        return this._tradeListsHtml(buys, sells, true);
+    }
+
+    _formatTradeFillsDetails(fills, buyTotal, sellTotal) {
+        if (!fills.length) {
+            return '<div class="journal-details-empty">сделок не было</div>';
+        }
+        const buys = fills.filter(fill => fill.op_type !== 2);
+        const sells = fills.filter(fill => fill.op_type === 2);
+        return `${this._tradeListsHtml(buys, sells, false)}
+            <div class="journal-details-totals">покупки: ${buyTotal}</div>
+            <div class="journal-details-totals">продажи: ${sellTotal}</div>`;
+    }
+
+    _tradeListsHtml(buys, sells, isIntent) {
+        const line = (item) => {
+            const qty = isIntent && item.quantity === -1 ? 'всё' : item.quantity;
+            return `<li>${escapeHtml(String(item.item_name))} ${escapeHtml(String(qty))} по ${escapeHtml(String(item.price))}</li>`;
+        };
+        const buyBlock = buys.length
+            ? `<div class="journal-details-label">Покупки</div><ul class="journal-details-list">${buys.map(line).join('')}</ul>`
+            : '';
+        const sellBlock = sells.length
+            ? `<div class="journal-details-label">Продажи</div><ul class="journal-details-list">${sells.map(line).join('')}</ul>`
+            : '';
+        return `${buyBlock}${sellBlock}`;
+    }
+
+    _formatMoveToObject(params, started) {
+        const verb = started ? 'начал движение к' : 'прибыл к';
+        const fleet = `Флот ${params.fleet_name} (${params.fleet_id})`;
+        const objId = params.obj_id;
+        const objName = params.obj_name ? String(params.obj_name) : '';
+        switch (params.obj_type) {
+            case 1:
+                return objName
+                    ? `${fleet} ${verb} платформе ${objName} (${objId})`
+                    : `${fleet} ${verb} платформе (${objId})`;
+            case 3:
+                return objName
+                    ? `${fleet} ${verb} флоту ${objName} (${objId})`
+                    : `${fleet} ${verb} флоту (${objId})`;
+            case 2: {
+                const contents = { 1: 'рыбы', 2: 'феррита', 3: 'пирозина' };
+                const content = contents[params.site_content] || 'ресурса';
+                return `${fleet} ${verb} месторождению ${content} (${objId})`;
+            }
+            default:
+                return `${fleet} ${verb} объекту (${objId})`;
+        }
+    }
+
+    _formatTime(iso) {
+        if (!iso) {
+            return '--';
+        }
+        const date = new Date(iso);
+        if (Number.isNaN(date.getTime())) {
+            return String(iso);
+        }
+        return date.toLocaleString();
+    }
+}
+
+/**
  * Главный менеджер соединений и диспетчер данных
  */
 class ConnectionManager {
-    constructor(logger, commandPanel, userCard, fleetCard, shipDetailCard) {
+    constructor(logger, commandPanel, userCard, fleetCard, shipDetailCard, journalCard) {
         this.tokenInput = document.getElementById('tokenInput');
         this.connectBtn = document.getElementById('connectBtn');
         
@@ -413,6 +681,7 @@ class ConnectionManager {
         this.userCard = userCard;
         this.fleetCard = fleetCard;
         this.shipDetailCard = shipDetailCard;
+        this.journalCard = journalCard;
         this.ws = null;
 
         this.connectBtn.onclick = () => this.connect();
@@ -494,6 +763,7 @@ class ConnectionManager {
         this.ws.onopen = () => {
             this.logger.info("Соединение установлено");
             this.commandPanel.setSocket(this.ws);
+            this.journalCard.load();
         };
 
         this.ws.onmessage = (event) => this.handleMessage(event);
@@ -525,6 +795,9 @@ class ConnectionManager {
                 } else if (data.entity_type === 'ship') {
                     this.shipDetailCard.update(data, JSON.stringify(data, null, 2));
                 }
+            } else if (data.out_type === 'journal') {
+                this.journalCard.setUnread(data.unread);
+                this.journalCard.load();
             }
         } catch (e) {
             console.error("Ошибка парсинга входящего сообщения", e);
@@ -536,9 +809,10 @@ class ConnectionManager {
 document.addEventListener("DOMContentLoaded", () => {
     const logger = new Logger('log');
     const shipDetailCard = new ShipDetailCard('shipDetailCard');
+    const journalCard = new JournalCard('journalCard');
     const commandPanel = new CommandPanel(logger);
 
-    const connectionManager = new ConnectionManager(logger, commandPanel, null, null, shipDetailCard);
+    const connectionManager = new ConnectionManager(logger, commandPanel, null, null, shipDetailCard, journalCard);
 
     const userCard = new UserCard('userCard', (fleetId) => {
         connectionManager.selectFleet(fleetId);

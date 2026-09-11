@@ -37,7 +37,8 @@ async def _run():
             transaction_manager=container.transaction,
             save_interval=config.save_interval,
             market_service=container.market_service,
-            redis_factory=container.get_redis
+            redis_factory=container.get_redis,
+            journal_service=container.core_journal_service
         )
 
         def command_handler(message):

@@ -15,7 +15,8 @@ class ShipMapper:
             'storage': entity.storage.to_dict(),
             'modules': [{'def': m.module_def.name, 'data': m.to_dict()} for m in entity.modules],
             'hull': entity.hull.to_dict(),
-            'hull_hp': entity.hull_hp
+            'hull_hp': entity.hull_hp,
+            'starvation': entity.starvation
         }
 
     def _load_state(self, entity: ShipEntity, data: dict[str, Any]):
@@ -26,6 +27,7 @@ class ShipMapper:
         entity.storage.from_dict(data.get('storage', {}))
         entity.hull.from_dict(data.get('hull', {}))
         entity.hull_hp = float(data.get('hull_hp', entity.hull.get_max_health()))
+        entity.starvation = data.get('starvation', False)
         entity.modules = []
 
         # Грузим модули

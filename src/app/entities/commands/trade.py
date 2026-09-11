@@ -6,6 +6,7 @@ from .factory import register_command
 from app.defs.enums import ObjectType, MarketOrderType
 from .docking import DockingCommand
 from app.defs.items import MAP as ItemMap
+from app.defs.journal import trade_completed, trade_started
 
 
 class TradeOperation(TypedDict):
@@ -60,8 +61,18 @@ class TradeCommand(BaseCommand):
                 return
             case 1:
                 async def trade_ops():
+                    platform = self.world.find_platform(self.platform_id)
+                    if platform is None:
+                        self.finished = True
+                        return
+
+                    self.world.emit_journal_event(
+                        trade_started(self.fleet, platform, self.operations)
+                    )
+
                     fleet_owner = self.world.find_user(fleet.owner_id)
                     market_service = self.world.get_market_service()
+                    fills: dict[tuple, int] = {}
 
                     for op in self.operations:
                         item_type = ItemMap.get(op['item_name'], None)
@@ -103,12 +114,27 @@ class TradeCommand(BaseCommand):
                             else:
                                 fleet_owner.money += money
                                 ship.storage.pull(item_type, diff)
+
+                            key = (int(op['op_type']), op['item_name'], order.price)
+                            fills[key] = fills.get(key, 0) + diff
                                 
                             if not order_owner.is_npc:
                                 order.quantity -= diff
                                 # todo: Передача товара на склад, зачисление денег для игрока
                                 await market_service.save(order, checkpoint=True)
-                            
+
+                        fill_list = [
+                            {
+                                'op_type': op_type,
+                                'item_name': item_name,
+                                'price': price,
+                                'quantity': quantity,
+                            }
+                            for (op_type, item_name, price), quantity in fills.items()
+                        ]
+                        self.world.emit_journal_event(
+                            trade_completed(self.fleet, platform, self.operations, fill_list)
+                        )
                     self.finished = True
                 self.world.add_async_action(trade_ops)
                 self.is_process = True

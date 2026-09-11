@@ -38,6 +38,10 @@ from app.mappers.area import AreaMapper
 from app.repositories.area import AreaRepository
 from app.services.area.core import CoreAreaService
 from app.services.area.action import AreaService
+from app.repositories.journal import JournalRepository
+from app.services.journal.core import CoreJournalService
+from app.services.journal.action import JournalService
+from app.services.journal.client import ClientJournalService
 
 
 _session_var: ContextVar[AsyncSession | None] = ContextVar("session", default=None)
@@ -77,6 +81,33 @@ class Container:
         return AreaService(
             repository=self.area_repository,
             transaction=self.transaction
+        )
+
+    @cached_property
+    def journal_repository(self) -> JournalRepository:
+        return JournalRepository(
+            session_factory=self.get_session
+        )
+
+    @cached_property
+    def core_journal_service(self) -> CoreJournalService:
+        return CoreJournalService(
+            repository=self.journal_repository,
+            transaction=self.transaction,
+            life_state_registry=self.life_state_registry,
+        )
+
+    @cached_property
+    def journal_service(self) -> JournalService:
+        return JournalService(
+            repository=self.journal_repository,
+            transaction=self.transaction
+        )
+
+    @cached_property
+    def client_journal_service(self) -> ClientJournalService:
+        return ClientJournalService(
+            redis_factory=self.get_redis
         )
 
     @cached_property

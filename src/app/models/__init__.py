@@ -6,3 +6,4 @@ from .platform import PlatformModel
 from .market_order import MarketOrder, MarketOrderSnapshot
 from .fleet import FleetModel
 from .area import AreaModel
+from .journal import JournalEventModel

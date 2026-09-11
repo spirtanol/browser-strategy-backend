@@ -1,7 +1,7 @@
 from __future__ import annotations
 import asyncio
 import time
-from typing import TYPE_CHECKING, AsyncContextManager, Optional, Callable
+from typing import TYPE_CHECKING, AsyncContextManager, Optional, Callable, Any
 import logging
 
 from redis.asyncio.client import Pipeline, Redis
@@ -10,6 +10,7 @@ from app.services.fleet.core import CoreFleetService
 from app.services.user.core import CoreUserService
 from app.services.platform.core import CorePlatformService
 from app.services.site.core import CoreSiteService
+from app.services.journal.core import CoreJournalService
 from app.entities.world import World, Awaitable
 from app.services.market import MarketService
 from app.defs.enums import MovingState
@@ -17,6 +18,7 @@ from app.entities.fleet import FleetEntity
 from app.services.area.core import CoreAreaService
 from app.utils import xy
 from app.defs.consts import AreaRadius
+from app.defs.journal import JournalEvent
 
 if TYPE_CHECKING:
     from app.entities.platform import PlatformEntity
@@ -39,7 +41,8 @@ class Engine(World):
         transaction_manager: Callable[[], AsyncContextManager[None]],
         save_interval: float,
         market_service: MarketService,
-        redis_factory: Callable[[], Redis]
+        redis_factory: Callable[[], Redis],
+        journal_service: CoreJournalService
     ):
         self.fleet_service = fleet_service
         self.user_service = user_service
@@ -55,7 +58,9 @@ class Engine(World):
         self._async_actions = []
         self.market_service = market_service
         self.redis_factory = redis_factory
-
+        self.journal_service = journal_service
+        self.events: list[JournalEvent] = []
+        
     async def _save(self, pipe: Optional[Pipeline]):
         async with self.transaction_manager():
             await self.area_service.save()
@@ -121,6 +126,11 @@ class Engine(World):
                 areas = self.area_service.get_all()
                 for area in areas:
                     area.update(dt)
+
+                if len(self.events) > 0:
+                    async with self.transaction_manager():
+                        await self.journal_service.add(self.events)
+                        self.events.clear()
                 
                 redis = self.redis_factory()
 
@@ -128,6 +138,7 @@ class Engine(World):
                     # Можно сбрасывать данные не каждый тик
                     self.fleet_service.flush(pipe)
                     self.user_service.flush(pipe)
+                    await self.journal_service.flush(pipe)
                     self.platform_service.flush()
                     self.site_service.flush()
 
@@ -173,7 +184,7 @@ class Engine(World):
     def find_site(self, id: int) -> Optional[SiteEntity]:
         return self.site_service.find(id)
 
-    def add_async_action(self, action: Callable[[], Awaitable[any]]):
+    def add_async_action(self, action: Callable[[], Awaitable[Any]]):
         self._async_actions.append(action)
     
     def get_market_service(self) -> MarketService:
@@ -201,3 +212,6 @@ class Engine(World):
             if xy.distance(area.x, area.y, x, y) <= AreaRadius:
                 return area
         return None
+
+    def emit_journal_event(self, event: JournalEvent) -> None:
+        self.events.append(event)

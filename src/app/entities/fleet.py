@@ -8,6 +8,7 @@ from app.defs.enums import MovingState, ObjectType
 from .anchor_point import AnchorPointEntity
 from app.defs.items import NetworkResource, StorageItemType
 from app.defs.consts import AreaRadius
+from app.defs.journal import starvation_begins
 
 if TYPE_CHECKING:
     from .ship import ShipEntity
@@ -27,6 +28,7 @@ class FleetEntity(MapEntity):
         self.ships: dict[int, ShipEntity] = {}
         self.cached: bool = False
         self.area: Optional[AreaEntity] = None
+        self.starvation: bool = False
 
     @property
     def moving_state(self) -> MovingState:
@@ -43,8 +45,16 @@ class FleetEntity(MapEntity):
             ship.moving_state_changed(old_state, new_state)
 
     def update(self, dt: float):
+        starvation = False
         for ship in self.ships.values():
             ship.update(dt)
+            starvation = starvation or ship.starvation
+
+        if starvation != self.starvation:
+            if starvation:
+                self.world.emit_journal_event(starvation_begins(self))
+            self.starvation = starvation
+
         self.command_queue.update(dt)
         
         if self.moving_state == MovingState.Move:

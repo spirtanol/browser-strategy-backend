@@ -63,7 +63,7 @@
                         <span class="user-id" id="fleetId">ID: --</span>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.9em; margin-top: 5px;">
-                        <div><strong>Координаты:</strong> <span id="fleetPos">--</span><span id="fleetArea">--</span></div>
+                        <div><strong>Координаты:</strong> <span id="fleetPos">--</span> [<span id="fleetArea">--</span>]</div>
                         <div><strong>Макс. Скорость:</strong> <span id="fleetSpeed">--</span></div>
                         <div><strong>Статус:</strong> <span id="fleetState">--</span></div>
                         <div><strong>Пришвартован к:</strong> <span id="fleetAttached">--</span></div>
@@ -126,6 +126,19 @@
 
         <!-- Правая колонка управления -->
         <div class="column">
+            <strong>Журнал событий:</strong>
+            <div id="journalCardContainer">
+                <div class="user-card" id="journalCard" style="opacity: 0.5;">
+                    <div class="user-card-header">
+                        <span class="user-name">Журнал</span>
+                        <span class="journal-unread-badge" id="journalUnreadBadge">0</span>
+                    </div>
+                    <div id="journalList" class="journal-list">
+                        <div class="journal-empty">событий нет</div>
+                    </div>
+                </div>
+            </div>
+
             <strong>Отправить команду (JSON):</strong>
             <textarea id="cmdInput"></textarea>
             <button id="sendBtn" disabled>Отправить команду</button>

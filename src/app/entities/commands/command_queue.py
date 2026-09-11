@@ -5,6 +5,7 @@ from collections import deque
 from .base import BaseCommand
 from .factory import load as load_command
 from app.defs.enums import MovingState
+from app.defs.journal import commands_complete
 
 if TYPE_CHECKING:
     from ..fleet import FleetEntity
@@ -31,6 +32,7 @@ class CommandQueue:
             if self.queue[0].finished:
                 self.queue.popleft()
                 if len(self.queue) == 0:
+                    self.fleet.world.emit_journal_event(commands_complete(self.fleet))
                     if self.fleet.moving_state in (MovingState.Move, MovingState.Maneuvering):
                         self.fleet.moving_state = MovingState.Idle
             

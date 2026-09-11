@@ -4,10 +4,12 @@ from app.defs.ship_hull import HullConfig, get_hull_config
 
 class ShipHull:
     size: int
+    hull_config: HullConfig
 
     def __init__(self, size: int = 0, hull_config: Optional[HullConfig] = None):
         self.size = size
-        self.hull_config: Optional[HullConfig] = hull_config
+        if hull_config:
+            self.hull_config = hull_config
 
     def to_dict(self):
         return {

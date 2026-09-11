@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, Any
 
 from .base import BaseCommand
 from .factory import register_command
-from ..world import World
 import app.defs.consts as Consts
 from app.defs.enums import MovingState, ObjectType
 
@@ -34,8 +33,10 @@ class UndockingCommand(BaseCommand):
         if self.progress >= 1.0:
             fleet.moving_state = MovingState.Idle
             if fleet.attached_to_type == ObjectType.Platform:
-                platform = self.world.find_platform(fleet.attached_to_id)
-                fleet.detach(platform)
+                if fleet.attached_to_id:
+                    platform = self.world.find_platform(fleet.attached_to_id)
+                    if platform:
+                        fleet.detach(platform)
             self.finished = True
 
     def to_dict(self) -> dict[str, Any]:

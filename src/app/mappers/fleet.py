@@ -11,7 +11,8 @@ class FleetMapper:
             'pos': [entity.pos.x, entity.pos.y],
             'ms': entity._move_state,
             'attached_to_id': entity.attached_to_id,
-            'attached_to_type': entity.attached_to_type
+            'attached_to_type': entity.attached_to_type,
+            'starvation': entity.starvation
         }
 
     def _load_state(self, entity: FleetEntity, data: dict[str, Any]):
@@ -21,6 +22,7 @@ class FleetMapper:
         entity.attached_to_id = data.get('attached_to_id', None)
         obj_type = data.get('attached_to_type', None)
         entity.attached_to_type = ObjectType(obj_type) if obj_type else None
+        entity.starvation = data.get('starvation', False)
 
     def to_dict(self, entity: FleetEntity) -> dict[str, Any]:
         data = self._dump_state(entity)

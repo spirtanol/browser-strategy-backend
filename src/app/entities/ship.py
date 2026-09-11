@@ -21,10 +21,11 @@ if TYPE_CHECKING:
 
 
 class ShipEntity:
+    fleet: FleetEntity
+
     def __init__(self, id: int = 0, name: str = ''):
         self.id: int = id
         self.fleet_id: int = 0
-        self.fleet: Optional[FleetEntity] = None
         self.counter: int = 0
         self.storage = Storage()
         self.crew: int = 0
@@ -36,6 +37,7 @@ class ShipEntity:
         self._locked_ex_slots: int = 0
         self.hull_hp: float = 0.0
         self.repair_buffer: float = 0.0
+        self.starvation: bool = False
 
     def get_counter(self) -> int:
         self.counter += 1
@@ -70,8 +72,10 @@ class ShipEntity:
             if have > 0:
                 self.hunger -= have / self.crew
                 write_off()
+                self.starvation = False
             elif self.hunger >= HungerThreshold:
                 self.crew -= 1
+                self.starvation = True
                 if self.crew <= 0:
                     self.hunger = 0.0
                     return
