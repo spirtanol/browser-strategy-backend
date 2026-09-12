@@ -22,14 +22,16 @@ from app.services.site.action import SiteService
 from app.services.site.client import ClientSiteService
 from app.services.token import TokenService
 from app.services.auth import AuthService
+from app.services.account import AccountService
 from app.mappers.ship import ShipMapper
-from app.mappers.user import UserMapper
+from app.mappers.player import PlayerMapper
 from app.mappers.platform import PlatformMapper
 from app.mappers.site import SiteMapper
 from app.mappers.fleet import FleetMapper
-from app.services.user.action import UserService, UserRepository
-from app.services.user.core import CoreUserService
-from app.services.user.client import ClientUserService
+from app.services.player.action import PlayerService
+from app.services.player.core import CorePlayerService
+from app.services.player.client import ClientPlayerService
+from app.repositories.player import PlayerRepository
 from app.services.fleet.core import CoreFleetService, FleetRepository
 from app.services.fleet.action import FleetService
 from app.services.fleet.client import ClientFleetService
@@ -39,6 +41,7 @@ from app.repositories.area import AreaRepository
 from app.services.area.core import CoreAreaService
 from app.services.area.action import AreaService
 from app.repositories.journal import JournalRepository
+from app.repositories.account import AccountRepository
 from app.services.journal.core import CoreJournalService
 from app.services.journal.action import JournalService
 from app.services.journal.client import ClientJournalService
@@ -243,46 +246,58 @@ class Container:
         )
 
     @cached_property
-    def user_mapper(self) -> UserMapper:
-        return UserMapper()
+    def account_repository(self) -> AccountRepository:
+        return AccountRepository(
+            session_factory=self.get_session,
+        )
 
     @cached_property
-    def user_repository(self) -> UserRepository:
-        return UserRepository(
+    def player_mapper(self) -> PlayerMapper:
+        return PlayerMapper()
+
+    @cached_property
+    def player_repository(self) -> PlayerRepository:
+        return PlayerRepository(
             session_factory=self.get_session,
-            mapper=self.user_mapper
+            mapper=self.player_mapper
         )
 
     @cached_property
     def auth_service(self) -> AuthService:
         return AuthService(
-            user_repo=self.user_repository,
+            account_repo=self.account_repository,
             token_service=self.token_service
         )
 
     @cached_property
-    def core_user_service(self) -> CoreUserService:
-        return CoreUserService(
-            user_repo=self.user_repository,
+    def account_service(self) -> AccountService:
+        return AccountService(
+            account_repo=self.account_repository,
+            transaction=self.transaction,
+        )
+
+    @cached_property
+    def core_player_service(self) -> CorePlayerService:
+        return CorePlayerService(
+            player_repo=self.player_repository,
             life_state_registry=self.life_state_registry,
             transaction=self.transaction,
             fleet_service=self.core_fleet_service,
         )
 
     @cached_property
-    def client_user_service(self) -> ClientUserService:
-        return ClientUserService(
-            user_repository=self.user_repository,
+    def client_player_service(self) -> ClientPlayerService:
+        return ClientPlayerService(
+            player_repository=self.player_repository,
             redis_factory=self.get_redis,
             life_state_pusher=self.life_state_pusher,
             transaction=self.transaction,
         )
 
     @cached_property
-    def user_service(self) -> UserService:
-        return UserService(
-            user_repo=self.user_repository,
-            user_mapper=self.user_mapper,
+    def player_service(self) -> PlayerService:
+        return PlayerService(
+            player_repo=self.player_repository,
             transaction=self.transaction,
         )
 

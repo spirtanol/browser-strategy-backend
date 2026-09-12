@@ -40,7 +40,7 @@ def create_order(
     async def inner():
         async with get_context_container() as container:
             async with container.transaction():
-                user = await container.user_service.find(dto.owner_id)
+                user = await container.player_service.find(dto.owner_id)
 
                 if user is None:
                     print(f'Пользователь {dto.owner_id} не найден')
@@ -66,7 +66,7 @@ def remove_order(order_id: Annotated[int, typer.Argument(help='ID ордера')
                     print(f'Ордер {order_id} не существует')
                     return
 
-                owner = await container.user_service.find(order.owner_id)
+                owner = await container.player_service.find(order.owner_id)
                 
                 if owner is None:
                     print(f'Владелец ордера {order_id} не найден')

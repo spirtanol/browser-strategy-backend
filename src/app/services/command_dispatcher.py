@@ -3,7 +3,7 @@ from typing import AsyncContextManager, Callable
 from redis.asyncio import Redis
 
 from app.schemas.commands import GameCommand
-from app.entities.user import UserEntity
+from app.entities.player import PlayerEntity
 from .commands.factory import get_resolver, ResolverContext
 
 
@@ -20,11 +20,11 @@ class CommandDispatcherService:
         self._resolver_context = resolver_context
         self._transaction = transaction
         
-    async def dispatch(self, command: GameCommand, user: UserEntity):
+    async def dispatch(self, command: GameCommand, player: PlayerEntity):
         async with self._transaction():
             resolver, dto_class = get_resolver(command.action)
             dto = dto_class.model_validate({'id': command.id, **command.params})
-            await resolver(self._resolver_context, user, dto)
+            await resolver(self._resolver_context, player, dto)
             
             redis_client = self._redis_factory()
 

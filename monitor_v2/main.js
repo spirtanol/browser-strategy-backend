@@ -17,17 +17,17 @@ class Logger {
 /**
  * Компонент Карточки Игрока
  */
-class UserCard {
+class PlayerCard {
     constructor(containerId, onFleetSelect) {
         this.el = document.getElementById(containerId);
         this.onFleetSelect = onFleetSelect;
         this.selectedFleetId = null;
         this.ui = {
-            name: this.el.querySelector('#userName'),
-            id: this.el.querySelector('#userId'),
-            money: this.el.querySelector('#userMoney'),
+            name: this.el.querySelector('#playerName'),
+            id: this.el.querySelector('#playerId'),
+            money: this.el.querySelector('#playerMoney'),
             fleetsContainer: this.el.querySelector('#fleetsContainer'),
-            rawBlock: this.el.querySelector('#userRawBlock'),
+            rawBlock: this.el.querySelector('#playerRawBlock'),
             toggleJsonBtn: this.el.querySelector('#toggleJsonBtn')
         };
         this.isJsonVisible = false;
@@ -49,15 +49,15 @@ class UserCard {
         }
     }
 
-    update(userData, rawJson) {
+    update(playerData, rawJson) {
         if (this.el.style.opacity !== "1") {
             this.el.style.opacity = "1";
         }
-        this.ui.name.textContent = userData.name;
-        this.ui.id.textContent = `ID: ${userData.id}`;
-        this.ui.money.textContent = userData.money.toLocaleString();
+        this.ui.name.textContent = playerData.name;
+        this.ui.id.textContent = `ID: ${playerData.id}`;
+        this.ui.money.textContent = playerData.money.toLocaleString();
         this.ui.rawBlock.textContent = rawJson;
-        this.updateFleets(userData.fleets);
+        this.updateFleets(playerData.fleets);
     }
 
     setSelectedFleetId(fleetId) {
@@ -672,13 +672,13 @@ class JournalCard {
  * Главный менеджер соединений и диспетчер данных
  */
 class ConnectionManager {
-    constructor(logger, commandPanel, userCard, fleetCard, shipDetailCard, journalCard) {
+    constructor(logger, commandPanel, playerCard, fleetCard, shipDetailCard, journalCard) {
         this.tokenInput = document.getElementById('tokenInput');
         this.connectBtn = document.getElementById('connectBtn');
         
         this.logger = logger;
         this.commandPanel = commandPanel;
-        this.userCard = userCard;
+        this.playerCard = playerCard;
         this.fleetCard = fleetCard;
         this.shipDetailCard = shipDetailCard;
         this.journalCard = journalCard;
@@ -700,7 +700,7 @@ class ConnectionManager {
         };
 
         this.ws.send(JSON.stringify(actionPayload));
-        this.userCard.setSelectedFleetId(fleetId);
+        this.playerCard.setSelectedFleetId(fleetId);
         this.commandPanel.setInitialTemplate(fleetId);
         this.resetShipDetail();
         this.logger.info(`Запрошены данные флотилии ID: ${fleetId}`);
@@ -790,8 +790,8 @@ class ConnectionManager {
             if (data.out_type === 'entity') {
                 if (data.entity_type === 'fleet') {
                     this.fleetCard.update(data, JSON.stringify(data, null, 2));
-                } else if (data.entity_type === 'user') {
-                    this.userCard.update(data, JSON.stringify(data, null, 2));
+                } else if (data.entity_type === 'player') {
+                    this.playerCard.update(data, JSON.stringify(data, null, 2));
                 } else if (data.entity_type === 'ship') {
                     this.shipDetailCard.update(data, JSON.stringify(data, null, 2));
                 }
@@ -814,14 +814,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const connectionManager = new ConnectionManager(logger, commandPanel, null, null, shipDetailCard, journalCard);
 
-    const userCard = new UserCard('userCard', (fleetId) => {
+    const playerCard = new PlayerCard('playerCard', (fleetId) => {
         connectionManager.selectFleet(fleetId);
     });
     const fleetCard = new FleetCard('fleetCard', (shipId) => {
         connectionManager.selectShip(shipId);
     });
 
-    connectionManager.userCard = userCard;
+    connectionManager.playerCard = playerCard;
     connectionManager.fleetCard = fleetCard;
 
     new AuthPanel(logger, (token) => {

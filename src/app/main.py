@@ -30,7 +30,7 @@ async def _run():
             dt_multiplier=config.dt_multiplier, 
             tick_duration=config.tick_duration, 
             fleet_service=container.core_fleet_service,
-            user_service=container.core_user_service,
+            player_service=container.core_player_service,
             platform_service=container.core_platform_service,
             site_service=container.core_site_service,
             area_service=container.core_area_service,

@@ -1,5 +1,5 @@
 from .base import ResolverContext, CommandResolvingError
-from app.entities.user import UserEntity
+from app.entities.player import PlayerEntity
 from ..handlers.transfer_cargo import TransferCargoCommandParams
 from .fleet_resolver import fleet_command_resolver
 from app.defs.items import MAP as ItemMap
@@ -7,10 +7,10 @@ from app.defs.items import MAP as ItemMap
 
 async def transfer_cargo_resolver(
     context: ResolverContext,
-    user: UserEntity,
+    player: PlayerEntity,
     dto: TransferCargoCommandParams,
 ):
-    await fleet_command_resolver(context, user, dto)
+    await fleet_command_resolver(context, player, dto)
 
     fleet_a = await context.client_fleet_service.find(dto.fleet_id)
     if fleet_a is None:
@@ -29,10 +29,10 @@ async def transfer_cargo_resolver(
         if fleet_b is None:
             raise CommandResolvingError(dto, f'Флота {dto.target_fleet_id} не существует')
 
-        if fleet_b.owner_id != user.id:
+        if fleet_b.owner_id != player.id:
             raise CommandResolvingError(
                 dto,
-                f'Пользователь {user.id} не владеет флотом {fleet_b.id}',
+                f'Пользователь {player.id} не владеет флотом {fleet_b.id}',
             )
 
         ship_ids = ships_a | {ship.id for ship in fleet_b.ships}

@@ -1,12 +1,12 @@
 from .base import ResolverContext, CommandResolvingError
-from app.entities.user import UserEntity
+from app.entities.player import PlayerEntity
 from ..handlers.trade import TradeCommandParams
 from .dock_to_platform_resolver import dock_to_platform_resolver
 from app.defs.items import MAP as ItemMap
 
 
-async def trade_resolver(context: ResolverContext, user: UserEntity, dto: TradeCommandParams):
-    await dock_to_platform_resolver(context, user, dto)
+async def trade_resolver(context: ResolverContext, player: PlayerEntity, dto: TradeCommandParams):
+    await dock_to_platform_resolver(context, player, dto)
 
     errors = []
     if len(dto.operations) > 0:

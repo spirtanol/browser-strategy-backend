@@ -11,7 +11,7 @@ class FleetModel(BaseModel):
     __tablename__ = 'fleets'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    owner_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete='RESTRICT', onupdate='NO ACTION'), nullable=False, index=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("players.id", ondelete='RESTRICT', onupdate='NO ACTION'), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(64), nullable=False, index=False)
     state: Mapped[dict[str, Any]] = mapped_column(
         MutableDict.as_mutable(JSON),

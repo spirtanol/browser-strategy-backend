@@ -17,9 +17,10 @@ from app.schemas.commands import (
     GameCommand,
     SubscribeCommand,
 )
-from .deps import get_ws_user, UserEntity
+from .deps import get_ws_player
+from app.entities.player import PlayerEntity
 from app.schemas.fleet import FleetStateOut
-from app.schemas.user import UserStateOut
+from app.schemas.player import PlayerStateOut
 
 
 logger = logging.getLogger("app.core.engine")
@@ -33,7 +34,7 @@ def create_ws_router(prefix: str, tags: list[str | Enum]):
     @router.websocket('/')
     async def connect(
         websocket: WebSocket,
-        user: UserEntity = Depends(get_ws_user)
+        player: PlayerEntity = Depends(get_ws_player)
     ):
         async with get_context_container() as container:
             await websocket.accept()
@@ -42,7 +43,7 @@ def create_ws_router(prefix: str, tags: list[str | Enum]):
                 pending = []
                 
                 fleets_last_state: dict[int, FleetStateOut] = {}
-                user_last_state: Optional[UserStateOut] = None
+                player_last_state: Optional[PlayerStateOut] = None
                 selected_fleet_id: Optional[int] = None
 
                 async def fleet_state_loop(fleet_id: int):
@@ -62,15 +63,15 @@ def create_ws_router(prefix: str, tags: list[str | Enum]):
                     async for ship_state in container.client_ship_service.subscribe_to_updates(ship_id, logger):
                         await websocket.send_text(ship_state)
 
-                user_id = user.id
-                async def user_state_loop():
-                    nonlocal user_last_state
-                    async for user_state in container.client_user_service.subscribe_to_updates(user_id, logger):
-                        user_last_state = UserStateOut.model_validate_json(user_state)
-                        await websocket.send_text(user_state)
+                player_id = player.id
+                async def player_state_loop():
+                    nonlocal player_last_state
+                    async for player_state in container.client_player_service.subscribe_to_updates(player_id, logger):
+                        player_last_state = PlayerStateOut.model_validate_json(player_state)
+                        await websocket.send_text(player_state)
 
                 async def journal_loop():
-                    async for payload in container.client_journal_service.subscribe_to_updates(user_id, logger):
+                    async for payload in container.client_journal_service.subscribe_to_updates(player_id, logger):
                         await websocket.send_text(payload)
 
                 async def client_command_loop():
@@ -87,10 +88,10 @@ def create_ws_router(prefix: str, tags: list[str | Enum]):
                                     if subscribe_command.entity_type == 'fleet':
                                         fleet_id = subscribe_command.entity_id
 
-                                        if user_last_state is None:
+                                        if player_last_state is None:
                                             continue
 
-                                        if fleet_id not in (fleet.id for fleet in user_last_state.fleets):
+                                        if fleet_id not in (fleet.id for fleet in player_last_state.fleets):
                                             continue
 
                                         if fleet_state_task:
@@ -127,7 +128,7 @@ def create_ws_router(prefix: str, tags: list[str | Enum]):
                                         action=request.action,
                                         params=request.params
                                     )
-                                    await container.command_dispatcher_service.dispatch(command, user)
+                                    await container.command_dispatcher_service.dispatch(command, player)
                             except ValidationError as e:
                                 logger.exception(f'Ошибка парса команды {str(e)}')
                             except Exception as e:
@@ -137,7 +138,7 @@ def create_ws_router(prefix: str, tags: list[str | Enum]):
 
                 done, pending = await asyncio.wait(
                     [
-                        asyncio.create_task(user_state_loop()),
+                        asyncio.create_task(player_state_loop()),
                         asyncio.create_task(journal_loop()),
                         asyncio.create_task(client_command_loop()),
                     ],

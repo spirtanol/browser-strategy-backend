@@ -1,38 +1,37 @@
-from pydantic import BaseModel, Field, EmailStr, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Literal
 
-from app.entities.user import UserEntity
+from app.entities.player import PlayerEntity
 from src.app.entities.fleet import FleetEntity
 from src.app.schemas.fleet import FleetShortInfoOut
 from .common import EntityState
 
-class CreateUserSchema(BaseModel):
+class CreatePlayerSchema(BaseModel):
     name: str = Field(max_length=128)
-    email: EmailStr = Field(max_length=128)
-    password: str = Field(min_length=4, max_length=64)
+    account_id: int
 
 class CreateNpcSchema(BaseModel):
     name: str = Field(max_length=128)
 
-class UserSchema(BaseModel):
+class PlayerSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     name: str
     email: str
 
-class UserStateOut(EntityState):
-    entity_type: Literal['user'] = 'user'
+class PlayerStateOut(EntityState):
+    entity_type: Literal['player'] = 'player'
     id: int
     name: str
     money: int
     fleets: list[FleetShortInfoOut]
 
     @classmethod
-    def from_entity(cls, user: UserEntity, fleets: list[FleetEntity]) -> 'UserStateOut':
+    def from_entity(cls, player: PlayerEntity, fleets: list[FleetEntity]) -> 'PlayerStateOut':
         return cls(
-            id=user.id,
-            name=user.name,
-            money=user.money,
+            id=player.id,
+            name=player.name,
+            money=player.money,
             fleets=[FleetShortInfoOut.from_entity(fleet) for fleet in fleets]
         )

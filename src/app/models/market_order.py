@@ -9,7 +9,7 @@ class MarketOrder(BaseModel):
     __tablename__ = 'market_orders'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    owner_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete='RESTRICT', onupdate='NO ACTION'), nullable=False, index=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("players.id", ondelete='RESTRICT', onupdate='NO ACTION'), nullable=False, index=True)
     platform_id: Mapped[int] = mapped_column(ForeignKey("platforms.id", ondelete='RESTRICT', onupdate='NO ACTION'), nullable=False, index=True)
     order_type: Mapped[MarketOrderType] = mapped_column(Integer, nullable=False, index=True)
     price: Mapped[int] = mapped_column(Integer, nullable=False, index=True)

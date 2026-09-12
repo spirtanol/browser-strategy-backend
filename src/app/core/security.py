@@ -22,7 +22,7 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 def create_token(alg: str, secret_key: str, dto: TokenSchema) -> AuthToken:
     to_encode: dict[str, Any] = {
-        "sub": str(dto.user_id), 
+        "sub": str(dto.account_id), 
         "iat": int(dto.iat.timestamp()), 
         "exp": int(dto.exp.timestamp()),
         "type": dto.token_type,
@@ -37,7 +37,7 @@ def decode_token(alg: str, secret_key: str, token: str) -> TokenSchema:
     try:
         data = jwt.decode(token, secret_key, algorithms=[alg])
         return TokenSchema(
-            user_id=data['sub'],
+            account_id=data['sub'],
             iat=datetime.fromtimestamp(float(data['iat'])),
             exp=datetime.fromtimestamp(float(data['exp'])),
             token_type=data['type'],

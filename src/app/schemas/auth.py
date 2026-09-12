@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, ConfigDict
 
-from .user import UserSchema
+from .player import PlayerSchema
 
 
 class AuthToken(BaseModel):
@@ -10,7 +10,7 @@ class AuthToken(BaseModel):
     expired_at: datetime
 
 class TokenSchema(BaseModel):
-    user_id: int
+    account_id: int
     token_type: str
     iat: datetime
     exp: datetime
@@ -24,9 +24,14 @@ class LoginRequest(LoginCredentials):
     pass
 
 class AccessSchema(BaseModel):
+    account_id: int
+    email: str
     access_token: AuthToken
     refresh_token: AuthToken
-    user: UserSchema
 
-class LoginResponse(AccessSchema):
+class LoginResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
+
+    access_token: AuthToken
+    refresh_token: AuthToken
+    user: PlayerSchema

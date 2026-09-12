@@ -14,7 +14,7 @@ class JournalEventModel(BaseModel):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete='CASCADE', onupdate='NO ACTION'),
+        ForeignKey("players.id", ondelete='CASCADE', onupdate='NO ACTION'),
         nullable=False,
     )
     emitter_type: Mapped[Optional[JournalEmitterType]] = mapped_column(Integer, nullable=True)

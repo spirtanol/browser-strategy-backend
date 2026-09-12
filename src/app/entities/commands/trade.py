@@ -70,7 +70,7 @@ class TradeCommand(BaseCommand):
                         trade_started(self.fleet, platform, self.operations)
                     )
 
-                    fleet_owner = self.world.find_user(fleet.owner_id)
+                    fleet_owner = self.world.find_player(fleet.owner_id)
                     market_service = self.world.get_market_service()
                     fills: dict[tuple, int] = {}
 
@@ -106,7 +106,7 @@ class TradeCommand(BaseCommand):
                             diff = left if order.quantity > left else order.quantity
                             left -= diff
                             money = diff * order.price
-                            order_owner = self.world.find_user(order.owner_id)
+                            order_owner = self.world.find_player(order.owner_id)
 
                             if op['op_type'] == MarketOrderType.Buy:
                                 fleet_owner.money -= money

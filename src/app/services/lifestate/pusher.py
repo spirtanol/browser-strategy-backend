@@ -18,15 +18,15 @@ class LifeStatePusher:
         redis = self._redis_factory()
         await redis.delete(f'a_ship:{id}')
 
-    async def keep_alive_user(self, id: int):
+    async def keep_alive_player(self, id: int):
         redis = self._redis_factory()
-        if await redis.exists(f'a_user:{id}') == 0:
-            await redis.publish('alive', f'user:{id}')
-        await redis.set(f'a_user:{id}', 1, ex=self._ttl)
+        if await redis.exists(f'a_player:{id}') == 0:
+            await redis.publish('alive', f'player:{id}')
+        await redis.set(f'a_player:{id}', 1, ex=self._ttl)
 
-    async def put_user_to_sleep(self, id: int):
+    async def put_player_to_sleep(self, id: int):
         redis = self._redis_factory()
-        await redis.delete(f'a_user:{id}')
+        await redis.delete(f'a_player:{id}')
 
     async def keep_alive_fleet(self, id: int):
         redis = self._redis_factory()

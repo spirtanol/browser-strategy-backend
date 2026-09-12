@@ -34,19 +34,19 @@ class TokenService:
 
         redis = self._redis_factory()
 
-        blocked_version = await redis.get(f'token_block:{payload.user_id}')
+        blocked_version = await redis.get(f'token_block:{payload.account_id}')
 
         if ((blocked_version is not None and payload.version <= int(blocked_version))
-            or await redis.exists(f'token_block:{payload.user_id}:{payload.version}')):
+            or await redis.exists(f'token_block:{payload.account_id}:{payload.version}')):
             raise TokenInvalidError('Token is blacklisted')
         
         return payload
 
-    def create_tokens(self, user_id: int, version: int) -> tuple[AuthToken, AuthToken]:
+    def create_tokens(self, account_id: int, version: int) -> tuple[AuthToken, AuthToken]:
         date = datetime.now(UTC)
 
         token_schema = TokenSchema(
-            user_id=user_id,
+            account_id=account_id,
             token_type='access',
             iat=date,
             exp=date + timedelta(minutes=self._access_ttl),
@@ -62,8 +62,8 @@ class TokenService:
 
     async def invalidate_token(self, token: TokenSchema):
         redis = self._redis_factory()
-        await redis.set(f'token_block:{token.user_id}:{token.version}', 1, exat=int(token.exp.timestamp()))
+        await redis.set(f'token_block:{token.account_id}:{token.version}', 1, exat=int(token.exp.timestamp()))
 
-    async def invalidate_all_tokens(self, user_id: int, version: int):
+    async def invalidate_all_tokens(self, account_id: int, version: int):
         redis = self._redis_factory()
-        await redis.set(f'token_block:{user_id}', version, ex=self._refresh_ttl * 60)
+        await redis.set(f'token_block:{account_id}', version, ex=self._refresh_ttl * 60)

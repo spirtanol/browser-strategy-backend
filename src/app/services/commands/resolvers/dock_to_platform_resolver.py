@@ -1,11 +1,11 @@
 from .base import ResolverContext, CommandResolvingError
-from app.entities.user import UserEntity
+from app.entities.player import PlayerEntity
 from ..handlers.dock_to_platform import DockToPlatformCommandParams
 from .fleet_resolver import fleet_command_resolver
 
 
-async def dock_to_platform_resolver(context: ResolverContext, user: UserEntity, dto: DockToPlatformCommandParams):
-    await fleet_command_resolver(context, user, dto)
+async def dock_to_platform_resolver(context: ResolverContext, player: PlayerEntity, dto: DockToPlatformCommandParams):
+    await fleet_command_resolver(context, player, dto)
     
     platform = await context.client_platform_service.exists(dto.platform_id)
     if platform is None:

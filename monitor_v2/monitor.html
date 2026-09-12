@@ -32,17 +32,17 @@
     <div class="main-content">
         <!-- Левая колонка с карточкой игрока и логами -->
         <div class="column">
-            <strong>Состояние Игрока (User State):</strong>
-            <div id="userCardContainer">
-                <div class="user-card" id="userCard" style="opacity: 0.5;">
+            <strong>Состояние игрока:</strong>
+            <div id="playerCardContainer">
+                <div class="user-card" id="playerCard" style="opacity: 0.5;">
                     <div class="user-card-header">
-                        <span class="user-name" id="userName">Ожидание данных...</span>
-                        <span class="user-id" id="userId">ID: --</span>
+                        <span class="user-name" id="playerName">Ожидание данных...</span>
+                        <span class="user-id" id="playerId">ID: --</span>
                     </div>
                     <div class="user-main-info">
                         <div class="user-balance">
                             <span class="coin-icon">🪙</span> 
-                            <span id="userMoney">0</span>
+                            <span id="playerMoney">0</span>
                         </div>
                         <button class="toggle-json-btn" id="toggleJsonBtn">JSON</button>
                     </div>
@@ -51,7 +51,7 @@
                         <div id="fleetsContainer" class="ships-list">
                         </div>
                     </div>
-                    <pre class="user-raw-json" id="userRawBlock">{}</pre>
+                    <pre class="user-raw-json" id="playerRawBlock">{}</pre>
                 </div>
             </div>
 

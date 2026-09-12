@@ -2,7 +2,7 @@ from typing import Callable, Any, Type, Awaitable
 
 from .handlers.base import UserCommand
 from .resolvers.base import ResolverContext
-from app.entities.user import UserEntity
+from app.entities.player import PlayerEntity
 from app.entities.world import World
 from .registry import COMMAND_CONFIG
 
@@ -10,7 +10,7 @@ from .registry import COMMAND_CONFIG
 class NotFoundCommandError(Exception):
     pass
 
-def get_resolver(com_name: str) -> tuple[Callable[[ResolverContext, UserEntity, UserCommand], Awaitable[Any]], Type[UserCommand]]:
+def get_resolver(com_name: str) -> tuple[Callable[[ResolverContext, PlayerEntity, UserCommand], Awaitable[Any]], Type[UserCommand]]:
     command_item = COMMAND_CONFIG.get(com_name, None)
     
     if command_item is None:

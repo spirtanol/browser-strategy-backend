@@ -1,5 +1,5 @@
 from .base import ResolverContext, CommandResolvingError
-from app.entities.user import UserEntity
+from app.entities.player import PlayerEntity
 from ..handlers.reassign_ships import ReassignShipsCommandParams
 from .fleet_resolver import fleet_command_resolver
 from app.defs.enums import ShipReassignOpType
@@ -7,10 +7,10 @@ from app.defs.enums import ShipReassignOpType
 
 async def reassign_ships_resolver(
     context: ResolverContext,
-    user: UserEntity,
+    player: PlayerEntity,
     dto: ReassignShipsCommandParams,
 ):
-    await fleet_command_resolver(context, user, dto)
+    await fleet_command_resolver(context, player, dto)
 
     fleet_a = await context.client_fleet_service.find(dto.fleet_id)
     if fleet_a is None:
@@ -36,10 +36,10 @@ async def reassign_ships_resolver(
         if fleet_b is None:
             raise CommandResolvingError(dto, f'Флота {dto.target_fleet_id} не существует')
 
-        if fleet_b.owner_id != user.id:
+        if fleet_b.owner_id != player.id:
             raise CommandResolvingError(
                 dto,
-                f'Пользователь {user.id} не владеет флотом {fleet_b.id}',
+                f'Пользователь {player.id} не владеет флотом {fleet_b.id}',
             )
 
         ships_b = {ship.id for ship in fleet_b.ships}

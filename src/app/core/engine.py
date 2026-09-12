@@ -7,7 +7,7 @@ import logging
 from redis.asyncio.client import Pipeline, Redis
 
 from app.services.fleet.core import CoreFleetService
-from app.services.user.core import CoreUserService
+from app.services.player.core import CorePlayerService
 from app.services.platform.core import CorePlatformService
 from app.services.site.core import CoreSiteService
 from app.services.journal.core import CoreJournalService
@@ -22,7 +22,7 @@ from app.defs.journal import JournalEvent
 
 if TYPE_CHECKING:
     from app.entities.platform import PlatformEntity
-    from app.entities.user import UserEntity
+    from app.entities.player import PlayerEntity
     from app.entities.site import SiteEntity
     from app.entities.area import AreaEntity
 
@@ -34,7 +34,7 @@ class Engine(World):
         dt_multiplier: float, 
         tick_duration: int, 
         fleet_service: CoreFleetService,
-        user_service: CoreUserService,
+        player_service: CorePlayerService,
         platform_service: CorePlatformService,
         site_service: CoreSiteService,
         area_service: CoreAreaService,
@@ -45,7 +45,7 @@ class Engine(World):
         journal_service: CoreJournalService
     ):
         self.fleet_service = fleet_service
-        self.user_service = user_service
+        self.player_service = player_service
         self.platform_service = platform_service
         self.site_service = site_service
         self.area_service = area_service
@@ -64,7 +64,7 @@ class Engine(World):
     async def _save(self, pipe: Optional[Pipeline]):
         async with self.transaction_manager():
             await self.area_service.save()
-            await self.user_service.save()
+            await self.player_service.save()
             await self.fleet_service.save(pipe)
             await self.platform_service.save()
             await self.site_service.save()
@@ -88,7 +88,7 @@ class Engine(World):
             async with self.transaction_manager():
                 await self.market_service.restore_from_snapshots()
                 await self.area_service.load(self)
-                await self.user_service.load()
+                await self.player_service.load()
                 await self.fleet_service.load(pipe, self)
                 await self.platform_service.load(self)
                 await self.site_service.load(self)
@@ -115,9 +115,9 @@ class Engine(World):
                 for platform in platforms:
                     platform.update(dt)
 
-                users = self.user_service.get_all()
-                for user in users:
-                    user.update(dt)
+                players = self.player_service.get_all()
+                for player in players:
+                    player.update(dt)
 
                 sites = self.site_service.get_all()
                 for site in sites:
@@ -137,7 +137,7 @@ class Engine(World):
                 async with redis.pipeline() as pipe:
                     # Можно сбрасывать данные не каждый тик
                     self.fleet_service.flush(pipe)
-                    self.user_service.flush(pipe)
+                    self.player_service.flush(pipe)
                     await self.journal_service.flush(pipe)
                     self.platform_service.flush()
                     self.site_service.flush()
@@ -178,8 +178,8 @@ class Engine(World):
     def find_platform(self, id: int) -> Optional[PlatformEntity]:
         return self.platform_service.find(id)
 
-    def find_user(self, id: int) -> Optional[UserEntity]:
-        return self.user_service.find(id)
+    def find_player(self, id: int) -> Optional[PlayerEntity]:
+        return self.player_service.find(id)
 
     def find_site(self, id: int) -> Optional[SiteEntity]:
         return self.site_service.find(id)

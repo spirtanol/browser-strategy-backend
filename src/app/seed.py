@@ -9,7 +9,8 @@ from app.entities.fleet import FleetEntity
 from app.entities.area import AreaEntity
 from app.defs import modules as ModuleDefs, items as ItemDefs
 from app.entities.ship_modules import factory as ModuleFactory
-from app.schemas.user import CreateUserSchema, CreateNpcSchema
+from app.schemas.player import CreatePlayerSchema, CreateNpcSchema
+from app.schemas.account import CreateAccountSchema
 from app.core.disposer import dispose
 from app.defs.enums import MarketOrderType
 from app.defs.deposites import BaseRestrictions, SiteContent
@@ -28,12 +29,12 @@ async def seed_world(container: Container):
         # Создаем npc
         create_npc_dto = CreateNpcSchema(name='NPC')
 
-        npc_user = await container.user_service.create_npc(create_npc_dto)
+        npc = await container.player_service.create_npc(create_npc_dto)
 
         # Создаем платформу
         platform = PlatformEntity()
         platform.name = 'The Platform'
-        platform.owner_id = npc_user.id
+        platform.owner_id = npc.id
         platform.x = 2.0
         platform.y = 1.0
         await container.platform_service.save(platform)
@@ -45,18 +46,20 @@ async def seed_world(container: Container):
         await container.site_service.save(fish_site)
 
         # Создаем пользователя
-        create_user_dto = CreateUserSchema(
-            name='player 1',
+        account = await container.account_service.create(CreateAccountSchema(
             email='player@test.com',
-            password='12qwaszx'        )
-
-        user = await container.user_service.create(create_user_dto)
-        user.money = 1000
-        await container.user_service.save(user)
+            password='12qwaszx',
+        ))
+        player = await container.player_service.create(CreatePlayerSchema(
+            name='player 1',
+            account_id=account.id,
+        ))
+        player.money = 1000
+        await container.player_service.save(player)
 
         # Создаем флотилию
         fleet = FleetEntity()
-        fleet.owner_id = user.id
+        fleet.owner_id = player.id
         fleet.name = 'Fleet 1'
         fleet.pos.xy(0.1, 0.0)
         await container.fleet_service.save(fleet)
@@ -99,7 +102,7 @@ async def seed_world(container: Container):
         await container.ship_service.save(cargo_ship)
 
         await container.market_service.create(CreateMarketOrderSchema(
-            owner_id=npc_user.id,
+            owner_id=npc.id,
             platform_id=platform.id,
             order_type=MarketOrderType.Sell,
             price=10,
@@ -107,7 +110,7 @@ async def seed_world(container: Container):
             item_name=ItemDefs.MEAL.name
         ))
         await container.market_service.create(CreateMarketOrderSchema(
-            owner_id=npc_user.id,
+            owner_id=npc.id,
             platform_id=platform.id,
             order_type=MarketOrderType.Sell,
             price=20,
@@ -115,7 +118,7 @@ async def seed_world(container: Container):
             item_name=ItemDefs.MDO.name
         ))
         await container.market_service.create(CreateMarketOrderSchema(
-            owner_id=npc_user.id,
+            owner_id=npc.id,
             platform_id=platform.id,
             order_type=MarketOrderType.Sell,
             price=200,
@@ -123,7 +126,7 @@ async def seed_world(container: Container):
             item_name=ItemDefs.WeldingKit.name
         ))
         await container.market_service.create(CreateMarketOrderSchema(
-            owner_id=npc_user.id,
+            owner_id=npc.id,
             platform_id=platform.id,
             order_type=MarketOrderType.Buy,
             price=5,
