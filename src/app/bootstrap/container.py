@@ -45,6 +45,12 @@ from app.repositories.account import AccountRepository
 from app.services.journal.core import CoreJournalService
 from app.services.journal.action import JournalService
 from app.services.journal.client import ClientJournalService
+from app.ports.cache import Cache
+from app.ports.redis_cache import RedisCache
+from app.ports.broadcast import Broadcast
+from app.ports.redis_broadcast import RedisBroadcast
+from app.ports.subscription import Subscription
+from app.ports.redis_subscription import RedisSubscription
 
 
 _session_var: ContextVar[AsyncSession | None] = ContextVar("session", default=None)
@@ -98,6 +104,7 @@ class Container:
             repository=self.journal_repository,
             transaction=self.transaction,
             life_state_registry=self.life_state_registry,
+            broadcast=self.broadcast,
         )
 
     @cached_property
@@ -110,7 +117,7 @@ class Container:
     @cached_property
     def client_journal_service(self) -> ClientJournalService:
         return ClientJournalService(
-            redis_factory=self.get_redis
+            subscription=self.subscription
         )
 
     @cached_property
@@ -139,7 +146,7 @@ class Container:
     @cached_property
     def token_service(self) -> TokenService:
         return TokenService(
-            redis_factory=self.get_redis,
+            cache=self.cache,
             access_ttl=self.config.access_token_ttl,
             refresh_ttl=self.config.refresh_token_ttl,
             secret_key=self.config.secret_key,
@@ -165,12 +172,15 @@ class Container:
             ship_service=self.core_ship_service,
             save_interval=int(self.config.save_interval),
             transaction=self.transaction,
+            cache=self.cache,
+            broadcast=self.broadcast,
         )
 
     @cached_property
     def client_fleet_service(self):
         return ClientFleetService(
-            redis_factory=self.get_redis,
+            cache=self.cache,
+            subscription=self.subscription,
             life_state_pusher=self.life_state_pusher
         )
     
@@ -283,13 +293,14 @@ class Container:
             life_state_registry=self.life_state_registry,
             transaction=self.transaction,
             fleet_service=self.core_fleet_service,
+            broadcast=self.broadcast,
         )
 
     @cached_property
     def client_player_service(self) -> ClientPlayerService:
         return ClientPlayerService(
             player_repository=self.player_repository,
-            redis_factory=self.get_redis,
+            subscription=self.subscription,
             life_state_pusher=self.life_state_pusher,
             transaction=self.transaction,
         )
@@ -325,12 +336,13 @@ class Container:
             repository=self.ship_repository,
             life_state_registry=self.life_state_registry,
             transaction=self.transaction,
+            broadcast=self.broadcast,
         )
 
     @cached_property
     def client_ship_service(self) -> ClientShipService:
         return ClientShipService(
-            redis_factory=self.get_redis,
+            subscription=self.subscription,
             life_state_pusher=self.life_state_pusher
         )
 
@@ -341,7 +353,7 @@ class Container:
     @cached_property
     def command_dispatcher_service(self) -> CommandDispatcherService:
         return CommandDispatcherService(
-            redis_factory=self.get_redis,
+            broadcast=self.broadcast,
             resolver_context=self.resolver_context,
             transaction=self.transaction
         )
@@ -349,18 +361,31 @@ class Container:
     @cached_property
     def life_state_pusher(self) -> LifeStatePusher:
         return LifeStatePusher(
-            redis_factory=self.get_redis,
+            broadcast=self.broadcast,
+            cache=self.cache,
             ttl=self.config.alive_objects_duration
         )
 
     @cached_property
     def life_state_registry(self) -> LifeStateRegistry:
         return LifeStateRegistry(
-            redis_factory=self.get_redis
+            cache=self.cache
         )
 
     def get_redis(self, decode_responses=True) -> Redis:
         return get_redis(self.config.redis_url, decode_responses)
+
+    @cached_property
+    def cache(self) -> Cache:
+        return RedisCache(self.get_redis)
+
+    @cached_property
+    def broadcast(self) -> Broadcast:
+        return RedisBroadcast(self.get_redis)
+
+    @cached_property
+    def subscription(self) -> Subscription:
+        return RedisSubscription(self.get_redis)
 
     def get_session(self) -> AsyncSession:
         session = _session_var.get()

@@ -1,9 +1,9 @@
 import asyncio
 import signal
-from typing import Callable, AsyncContextManager
+from typing import Callable
 import logging
 
-from app.bootstrap.container import get_context_container, CommandHandlerService
+from app.bootstrap.container import get_context_container
 from app.core.engine import Engine
 from app.core.disposer import dispose
 from app.schemas.commands import GameCommand
@@ -37,31 +37,26 @@ async def _run():
             transaction_manager=container.transaction,
             save_interval=config.save_interval,
             market_service=container.market_service,
-            redis_factory=container.get_redis,
             journal_service=container.core_journal_service
         )
 
-        def command_handler(message):
+        def command_handler(payload: str):
             async def _handler():
                 try:
-                    command = GameCommand.model_validate_json(message['data'])
+                    command = GameCommand.model_validate_json(payload)
                     async with container.transaction():
                         await container.command_handler_service.handle(command, engine)
                 except Exception as e:
                     logger.exception(f'Ошибка при обработке команды {e}')
             fire_and_forget(_handler())
 
-        redis_client = container.get_redis()
-        subscriber = redis_client.pubsub()
-        await subscriber.subscribe(
-            commands=command_handler,
-            alive=container.life_state_registry.alive_handler
-        )
-
         async def message_loop():
             try:
-                while True:
-                    await subscriber.get_message(ignore_subscribe_messages=True, timeout=1.0)
+                async for msg in container.subscription.listen('commands', 'alive'):
+                    if msg.channel == 'commands':
+                        command_handler(msg.payload)
+                    elif msg.channel == 'alive':
+                        container.life_state_registry.alive_handler(msg.payload)
             except asyncio.CancelledError:
                 pass
 
@@ -87,8 +82,6 @@ async def _run():
             msg_task.cancel()
 
             await asyncio.gather(msg_task, life_task, return_exceptions=True)
-            await subscriber.unsubscribe()
-            await subscriber.aclose()
             await dispose()
 
 if __name__ == "__main__":

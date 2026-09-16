@@ -1,12 +1,11 @@
 from typing import AsyncContextManager, Callable
 
-from redis.asyncio.client import Pipeline
-
 from app.defs.journal import JournalEvent
 from app.models.journal import JournalEventModel
 from app.repositories.journal import JournalRepository
 from app.schemas.journal import JournalUnreadState
 from app.services.lifestate.registry import LifeStateRegistry
+from app.ports.broadcast import Broadcast, ChannelMessage
 
 
 class CoreJournalService:
@@ -15,10 +14,12 @@ class CoreJournalService:
         repository: JournalRepository,
         transaction: Callable[[], AsyncContextManager[None]],
         life_state_registry: LifeStateRegistry,
+        broadcast: Broadcast,
     ):
         self.repository = repository
         self._transaction = transaction
         self._life_state_registry = life_state_registry
+        self._broadcast = broadcast
         self._pending_player_ids: set[int] = set()
 
     async def add(self, events: list[JournalEvent]) -> None:
@@ -40,7 +41,7 @@ class CoreJournalService:
         for event in events:
             self._pending_player_ids.add(event.user_id)
 
-    async def flush(self, pipe: Pipeline) -> None:
+    async def flush(self) -> None:
         if not self._pending_player_ids:
             return
 
@@ -54,10 +55,15 @@ class CoreJournalService:
         if not alive_ids:
             return
 
+        messages = []
         async with self._transaction():
             counts = await self.repository.count_unread_by_users(alive_ids)
             for player_id in alive_ids:
                 count = counts.get(player_id, 0)
                 if count > 0:
                     dto = JournalUnreadState(unread=count)
-                    pipe.publish(f'journal:{player_id}', dto.model_dump_json())
+                    messages.append(ChannelMessage(
+                        channel=f'journal:{player_id}',
+                        payload=dto.model_dump_json(),
+                    ))
+        await self._broadcast.publish_many(messages)

@@ -1,7 +1,5 @@
 from typing import AsyncContextManager, Optional, Callable
 
-from redis.asyncio.client import Pipeline
-
 from app.repositories.fleet import FleetRepository
 from app.services.lifestate.registry import LifeStateRegistry
 from app.entities.fleet import FleetEntity
@@ -10,6 +8,8 @@ from ..ship.core import CoreShipService
 from app.core.exceptions import FleetNotFoundError
 from app.schemas.fleet import FleetStateOut
 from app.entities.world import World
+from app.ports.cache import Cache, CacheSet
+from app.ports.broadcast import Broadcast, ChannelMessage
 
 
 class CoreFleetService:
@@ -19,7 +19,9 @@ class CoreFleetService:
         life_state_registry: LifeStateRegistry,
         ship_service: CoreShipService,
         save_interval: int,
-        transaction: Callable[[], AsyncContextManager[None]]
+        transaction: Callable[[], AsyncContextManager[None]],
+        cache: Cache,
+        broadcast: Broadcast,
     ):
         self.repository = repository
         self._identity_map: dict[int, FleetEntity] = {}
@@ -27,16 +29,24 @@ class CoreFleetService:
         self._ship_service = ship_service
         self._save_interval = save_interval
         self._transaction = transaction
+        self._cache = cache
+        self._broadcast = broadcast
         self._loaded: bool = False
         self._pending_removed: dict[int, FleetEntity] = {}
 
-    def _set_cache(self, pipe: Pipeline):
+    async def _set_cache(self):
+        items = []
         for entity in self._identity_map.values():
             dto = FleetStateOut.from_entity(entity)
-            pipe.set(f'c_fleet:{entity.id}', dto.model_dump_json(), ex=self._save_interval + 10)
+            items.append(CacheSet(
+                key=f'c_fleet:{entity.id}',
+                value=dto.model_dump_json(),
+                ex=self._save_interval + 10,
+            ))
             entity.cached = True
+        await self._cache.set_many(items)
 
-    async def load(self, pipe: Pipeline, world: World):
+    async def load(self, world: World):
         async with self._transaction():
             await self.repository.remove_empty()
             entities = await self.repository.get_all()
@@ -54,13 +64,13 @@ class CoreFleetService:
                     raise FleetNotFoundError(ship.fleet_id)
                 fleet.add_ship(ship)
 
-            self._set_cache(pipe)
+            await self._set_cache()
             self._loaded = True
 
     def get_all(self) -> list[FleetEntity]:
         return list(self._identity_map.values())
 
-    async def save(self, pipe: Optional[Pipeline]):
+    async def save(self):
         if not self._loaded:
             return
 
@@ -73,32 +83,48 @@ class CoreFleetService:
                 await self.repository.remove(list(self._pending_removed.keys()))
                 self._pending_removed.clear()
 
-            if pipe:
-                self._set_cache(pipe)
+            await self._set_cache()
 
-    def flush(self, pipe: Pipeline):
+    async def flush(self):
         if not self._loaded:
             return
+
+        to_set: list[CacheSet] = []
+        to_delete: list[str] = []
+        messages: list[ChannelMessage] = []
 
         for entity in self.get_all():
             if not entity.cached:
                 dto = FleetStateOut.from_entity(entity)
-                pipe.set(f'c_fleet:{entity.id}', dto.model_dump_json(), ex=self._save_interval + 10)
+                to_set.append(CacheSet(
+                    key=f'c_fleet:{entity.id}',
+                    value=dto.model_dump_json(),
+                    ex=self._save_interval + 10,
+                ))
                 entity.cached = True
             
             if self._life_state_registry.is_alive_fleet(entity.id):
                 dto = FleetStateOut.from_entity(entity)
-                pipe.publish(f'fleet:{entity.id}', dto.model_dump_json())
+                messages.append(ChannelMessage(
+                    channel=f'fleet:{entity.id}',
+                    payload=dto.model_dump_json(),
+                ))
 
         for entity in self._pending_removed.values():
-            pipe.delete(f'c_fleet:{entity.id}')
+            to_delete.append(f'c_fleet:{entity.id}')
             if self._life_state_registry.is_alive_fleet(entity.id):
                 self._life_state_registry.remove_fleet(entity.id)
                 dto = FleetStateOut.from_entity(entity)
                 dto.removed = True
-                pipe.publish(f'fleet:{entity.id}', dto.model_dump_json())
+                messages.append(ChannelMessage(
+                    channel=f'fleet:{entity.id}',
+                    payload=dto.model_dump_json(),
+                ))
 
-        self._ship_service.flush(pipe)
+        await self._cache.set_many(to_set)
+        await self._cache.delete_many(to_delete)
+        await self._broadcast.publish_many(messages)
+        await self._ship_service.flush()
 
     async def is_empty(self):
         return await self.repository.is_empty()

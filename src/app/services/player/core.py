@@ -1,13 +1,12 @@
 from typing import AsyncContextManager, Optional, Callable
 
-from redis.asyncio.client import Pipeline
-
 from app.core.exceptions import ServiceNotLoadedError
 from app.repositories.player import PlayerRepository
 from app.entities.player import PlayerEntity
 from app.services.lifestate.registry import LifeStateRegistry
 from app.schemas.player import PlayerStateOut
 from src.app.services.fleet.core import CoreFleetService
+from app.ports.broadcast import Broadcast, ChannelMessage
 
 
 class CorePlayerService:
@@ -17,6 +16,7 @@ class CorePlayerService:
         life_state_registry: LifeStateRegistry,
         transaction: Callable[[], AsyncContextManager[None]],
         fleet_service: CoreFleetService,
+        broadcast: Broadcast,
     ):
         self._player_repo = player_repo
         self._identity_map: dict[int, PlayerEntity] = {}
@@ -24,6 +24,7 @@ class CorePlayerService:
         self._transaction = transaction
         self._loaded: bool = False
         self._fleet_service = fleet_service
+        self._broadcast = broadcast
 
     async def load(self):
         async with self._transaction():
@@ -39,15 +40,20 @@ class CorePlayerService:
             if self._identity_map:
                 await self._player_repo.save(self.get_all())
 
-    def flush(self, pipe: Pipeline):
+    async def flush(self):
         if not self._loaded:
             return
 
+        messages = []
         for entity in self.get_all():
             if self._life_state_registry.is_alive_player(entity.id):
                 fleets = self._fleet_service.get_by_owner(entity.id)
                 dto = PlayerStateOut.from_entity(entity, fleets)
-                pipe.publish(f'player:{entity.id}', dto.model_dump_json())
+                messages.append(ChannelMessage(
+                    channel=f'player:{entity.id}',
+                    payload=dto.model_dump_json(),
+                ))
+        await self._broadcast.publish_many(messages)
 
     def find(self, id: int) -> Optional[PlayerEntity]:
         if not self._loaded:

@@ -1,11 +1,9 @@
-from typing import Callable, Any
-
-from app.core.db import Redis
+from app.ports.cache import Cache
 
 
 class LifeStateRegistry:
-    def __init__(self, redis_factory: Callable[[], Redis]):
-        self._redis_factory = redis_factory
+    def __init__(self, cache: Cache):
+        self._cache = cache
         self._ship_ids = set()
         self._player_ids = set()
         self._fleet_ids = set()
@@ -31,8 +29,8 @@ class LifeStateRegistry:
     def is_alive_player(self, id: int) -> bool:
         return id in self._player_ids
 
-    def alive_handler(self, message: dict[str, Any]):
-        ename, id = message['data'].split(':')
+    def alive_handler(self, payload: str):
+        ename, id = payload.split(':')
         id = int(id)
         match ename:
             case 'ship':
@@ -43,38 +41,20 @@ class LifeStateRegistry:
                 self.add_fleet(id)
 
     async def check_active(self):
-        redis = self._redis_factory()
-        pipeline = redis.pipeline()
-
-        # Проверяем флотилии
         current_ids = list(self._fleet_ids)
-        for oid in current_ids:
-            pipeline.exists(f"a_fleet:{oid}")
-
-        results = await pipeline.execute()
-            
+        results = await self._cache.exists_many([f'a_fleet:{oid}' for oid in current_ids])
         for oid, exists in zip(current_ids, results):
             if not exists:
                 self._fleet_ids.remove(oid)
 
-        # Проверяем корабли
         current_ids = list(self._ship_ids)
-        for oid in current_ids:
-            pipeline.exists(f"a_ship:{oid}")
-
-        results = await pipeline.execute()
-            
+        results = await self._cache.exists_many([f'a_ship:{oid}' for oid in current_ids])
         for oid, exists in zip(current_ids, results):
             if not exists:
                 self._ship_ids.remove(oid)
 
-        # Проверяем игроков
         current_ids = list(self._player_ids)
-        for oid in current_ids:
-            pipeline.exists(f"a_player:{oid}")
-
-        results = await pipeline.execute()
-            
+        results = await self._cache.exists_many([f'a_player:{oid}' for oid in current_ids])
         for oid, exists in zip(current_ids, results):
             if not exists:
                 self._player_ids.remove(oid)
