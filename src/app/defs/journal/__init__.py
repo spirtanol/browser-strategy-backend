@@ -10,4 +10,9 @@ from .factories import (
     docked,
     trade_started,
     trade_completed,
+    site_discovered,
+    platform_discovered,
+    area_discovered,
+    fleet_discovered,
+    fleet_lost,
 )

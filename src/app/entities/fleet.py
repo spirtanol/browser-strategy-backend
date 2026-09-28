@@ -27,6 +27,7 @@ class FleetEntity(MapEntity):
         self.attached_to_type: Optional[ObjectType] = None
         self.ships: dict[int, ShipEntity] = {}
         self.cached: bool = False
+        self.pos_cached: bool = False
         self.area: Optional[AreaEntity] = None
         self.starvation: bool = False
 
@@ -43,6 +44,9 @@ class FleetEntity(MapEntity):
         self._move_state = new_state
         for ship in self.ships.values():
             ship.moving_state_changed(old_state, new_state)
+
+    def is_moving(self) -> bool:
+        return self._move_state == MovingState.Move
 
     def update(self, dt: float):
         starvation = False
@@ -79,15 +83,18 @@ class FleetEntity(MapEntity):
         ship.fleet_id = self.id
         ship.fleet = self
         ship.moving_state_changed(MovingState.Idle, self.moving_state)
+        self.cached = False
 
     def remove_ship(self, ship: ShipEntity):
         self.ships.pop(ship.id, None)
         ship.fleet_id = 0
+        self.cached = False
 
     def attach_to(self, anchor_point: AnchorPointEntity) -> None:
         self.attached_to_id = anchor_point.id
         self.attached_to_type = anchor_point.get_type()
         anchor_point.attach(self.id)
+        self.cached = False
 
     def detach(self, anchor_point: AnchorPointEntity) -> None:
         if self.attached_to_id is None:
@@ -96,6 +103,7 @@ class FleetEntity(MapEntity):
         self.attached_to_id = None
         self.attached_to_type = None
         anchor_point.detach(self.id)
+        self.cached = False
 
     def get_net_value(self, resource: NetworkResource) -> int | float:
         value = 0

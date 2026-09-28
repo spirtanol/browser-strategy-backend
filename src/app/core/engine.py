@@ -201,3 +201,8 @@ class Engine(World):
 
     def emit_journal_event(self, event: JournalEvent) -> None:
         self.events.append(event)
+
+    def on_fleet_left_area(self, fleet: FleetEntity) -> None:
+        for player in self.player_service.get_all():
+            if player.map is not None:
+                player.map.lose_fleet(fleet)

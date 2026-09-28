@@ -270,6 +270,36 @@ textarea { background: #252526; color: #ce9178; border: 1px solid #333; padding:
     color: #d4d4d4;
     margin-top: 2px;
 }
+.map-section {
+    margin-top: 10px;
+}
+.map-section strong {
+    font-size: 0.9em;
+}
+.map-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 160px;
+    overflow-y: auto;
+    margin-top: 6px;
+}
+.map-item {
+    font-size: 0.9em;
+    padding: 4px 8px;
+    background: #1e1e1e;
+    border-radius: 4px;
+}
+.map-meta {
+    color: #858585;
+    margin-left: 6px;
+}
+.map-empty {
+    color: #666;
+    font-style: italic;
+    font-size: 0.9em;
+}
+
 .journal-details-empty {
     color: #666;
     font-style: italic;

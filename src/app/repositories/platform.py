@@ -5,7 +5,9 @@ import sqlalchemy as sa
 from app.entities.platform import PlatformEntity
 from app.core.db import AsyncSession
 from app.models.platform import PlatformModel
+from app.models.player import PlayerModel
 from app.mappers.platform import PlatformMapper
+from app.schemas.player_map import MapPlatformOut
 
 
 class PlatformRepository:
@@ -52,6 +54,33 @@ class PlatformRepository:
         session = self._session_factory()
         q = sa.Select(sa.Exists(PlatformModel))
         return not bool(await session.scalar(q))
+
+    async def find_known(self, ids: set[int]) -> list[MapPlatformOut]:
+        if not ids:
+            return []
+        session = self._session_factory()
+        stmt = sa.select(
+            PlatformModel.id,
+            PlatformModel.x,
+            PlatformModel.y,
+            PlatformModel.name,
+            PlatformModel.owner_id,
+            PlayerModel.name.label('owner_name'),
+        ).join(
+            PlayerModel, PlayerModel.id == PlatformModel.owner_id
+        ).where(PlatformModel.id.in_(ids))
+        result = await session.execute(stmt)
+        return [
+            MapPlatformOut(
+                id=row.id,
+                x=row.x,
+                y=row.y,
+                name=row.name,
+                owner_id=row.owner_id,
+                owner_name=row.owner_name,
+            )
+            for row in result
+        ]
 
     async def exists(self, id: int) -> bool:
         session = self._session_factory()

@@ -6,6 +6,7 @@ from app.core.db import AsyncSession
 from app.mappers.site import SiteMapper
 from app.models.site import SiteModel
 from app.entities.site import SiteEntity
+from app.schemas.player_map import MapSiteOut
 
 
 class SiteRepository:
@@ -47,6 +48,29 @@ class SiteRepository:
         if data:
             await session.execute(sa.update(SiteModel), data)
             await session.flush()
+
+    async def find_known(self, ids: set[int]) -> list[MapSiteOut]:
+        if not ids:
+            return []
+        session = self._session_factory()
+        stmt = sa.select(
+            SiteModel.id,
+            SiteModel.x,
+            SiteModel.y,
+            SiteModel.site_type,
+            SiteModel.site_content,
+        ).where(SiteModel.id.in_(ids))
+        result = await session.execute(stmt)
+        return [
+            MapSiteOut(
+                id=row.id,
+                x=row.x,
+                y=row.y,
+                site_type=row.site_type,
+                site_content=row.site_content,
+            )
+            for row in result
+        ]
 
     async def exists(self, id: int) -> bool:
         session = self._session_factory()

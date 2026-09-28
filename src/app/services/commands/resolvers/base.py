@@ -6,6 +6,7 @@ from app.services.platform.client import ClientPlatformService
 from app.services.market import MarketService
 from app.services.site.client import ClientSiteService
 from app.services.fleet.client import ClientFleetService
+from app.services.player.client import ClientPlayerService
 
 
 class ResolverContext(Protocol):
@@ -14,6 +15,7 @@ class ResolverContext(Protocol):
     market_service: MarketService
     client_site_service: ClientSiteService
     client_fleet_service: ClientFleetService
+    client_player_service: ClientPlayerService
 
 class CommandResolvingError(Exception):
     def __init__(self, command: UserCommand, message: str):

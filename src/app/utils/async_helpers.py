@@ -1,5 +1,5 @@
 import asyncio
-from typing import Coroutine, Any
+from typing import Coroutine, Any, Optional
 
 
 _BACKGROUND_TASKS: set[asyncio.Task] = set()
@@ -14,3 +14,9 @@ def fire_and_forget(coro: Coroutine[Any, Any, Any], name: str | None = None) -> 
     task.add_done_callback(_BACKGROUND_TASKS.discard)
     
     return task
+
+async def aterminate(*task: Optional[asyncio.Task]):
+    for t in task:
+        if t:
+            t.cancel()
+    await asyncio.gather(*(t for t in task if t), return_exceptions=True)

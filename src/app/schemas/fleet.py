@@ -13,6 +13,24 @@ class Position(BaseModel):
     x: float
     y: float
 
+
+class FleetPosOut(BaseModel):
+    x: float
+    y: float
+    owner_id: int
+    owner_name: str
+
+    @classmethod
+    def from_entity(cls, fleet: FleetEntity) -> 'FleetPosOut':
+        owner = fleet.world.find_player(fleet.owner_id)
+        return cls(
+            x=fleet.pos.x,
+            y=fleet.pos.y,
+            owner_id=fleet.owner_id,
+            owner_name=owner.name if owner is not None else '',
+        )
+
+
 class FleetCommandOut(BaseModel):
     name: str
     state: dict[str, str | int | float | list | None | MovingState | ObjectType, dict, MarketOrderType]

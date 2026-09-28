@@ -1,7 +1,9 @@
 from typing import AsyncContextManager, Callable, Optional
 
 from app.repositories.player import PlayerRepository
+from app.repositories.player_map import PlayerMapRepository
 from app.entities.player import PlayerEntity
+from app.entities.player_map import PlayerMapEntity
 from app.schemas.player import CreatePlayerSchema, CreateNpcSchema
 
 
@@ -9,9 +11,11 @@ class PlayerService:
     def __init__(
         self,
         player_repo: PlayerRepository,
+        player_map_repo: PlayerMapRepository,
         transaction: Callable[[], AsyncContextManager[None]],
     ):
         self._player_repo = player_repo
+        self._player_map_repo = player_map_repo
         self._transaction = transaction
 
     async def find(self, id: int) -> Optional[PlayerEntity]:
@@ -22,12 +26,19 @@ class PlayerService:
         async with self._transaction():
             return await self._player_repo.find_by_account_id(account_id)
 
+    async def _create_map(self, player_id: int) -> PlayerMapEntity:
+        player_map = PlayerMapEntity()
+        player_map.player_id = player_id
+        await self._player_map_repo.save([player_map])
+        return player_map
+
     async def create(self, schema: CreatePlayerSchema) -> PlayerEntity:
         async with self._transaction():
             player = PlayerEntity()
             player.name = schema.name
             player.account_id = schema.account_id
             await self._player_repo.save([player])
+            player.map = await self._create_map(player.id)
             return player
 
     async def create_npc(self, schema: CreateNpcSchema) -> PlayerEntity:
@@ -41,3 +52,5 @@ class PlayerService:
     async def save(self, player: PlayerEntity):
         async with self._transaction():
             await self._player_repo.save([player])
+            if player.map:
+                await self._player_map_repo.save([player.map])

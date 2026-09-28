@@ -5,8 +5,10 @@ from .event import JournalEvent
 from ..enums import JournalEmitterType, JournalSeverity, ObjectType, SiteContent
 
 if TYPE_CHECKING:
+    from app.entities.area import AreaEntity
     from app.entities.fleet import FleetEntity
     from app.entities.platform import PlatformEntity
+    from app.entities.site import SiteEntity
 
 
 def starvation_begins(fleet: FleetEntity) -> JournalEvent:
@@ -192,5 +194,101 @@ def trade_completed(
             **_dock_params(fleet, platform),
             'operations': _trade_operations(operations),
             'fills': fills,
+        },
+    )
+
+
+def site_discovered(fleet: FleetEntity, site: SiteEntity) -> JournalEvent:
+    return JournalEvent(
+        user_id=fleet.owner_id,
+        event_type='site_discovered',
+        severity=JournalSeverity.Info,
+        emitter_id=fleet.id,
+        emitter_type=JournalEmitterType.Fleet,
+        params={
+            'fleet_id': fleet.id,
+            'fleet_name': fleet.name,
+            'site_id': site.id,
+            'x': site.x,
+            'y': site.y,
+            'site_content': int(site.site_content),
+        },
+    )
+
+
+def platform_discovered(fleet: FleetEntity, platform: PlatformEntity) -> JournalEvent:
+    return JournalEvent(
+        user_id=fleet.owner_id,
+        event_type='platform_discovered',
+        severity=JournalSeverity.Info,
+        emitter_id=fleet.id,
+        emitter_type=JournalEmitterType.Fleet,
+        params={
+            'fleet_id': fleet.id,
+            'fleet_name': fleet.name,
+            'platform_id': platform.id,
+            'platform_name': platform.name,
+            'x': platform.x,
+            'y': platform.y,
+        },
+    )
+
+
+def fleet_discovered(
+    player_id: int,
+    fleet: FleetEntity,
+    sensor: FleetEntity | PlatformEntity,
+) -> JournalEvent:
+    owner = fleet.world.find_player(fleet.owner_id)
+    if sensor.get_type() == ObjectType.Platform:
+        emitter_type = JournalEmitterType.Platform
+    else:
+        emitter_type = JournalEmitterType.Fleet
+    return JournalEvent(
+        user_id=player_id,
+        event_type='fleet_discovered',
+        severity=JournalSeverity.Info,
+        emitter_id=sensor.id,
+        emitter_type=emitter_type,
+        params={
+            'fleet_id': fleet.id,
+            'x': fleet.pos.x,
+            'y': fleet.pos.y,
+            'owner_id': fleet.owner_id,
+            'owner_name': owner.name if owner is not None else '',
+            'sensor_id': sensor.id,
+            'sensor_name': sensor.name,
+            'sensor_kind': int(sensor.get_type()),
+        },
+    )
+
+
+def fleet_lost(player_id: int, fleet: FleetEntity) -> JournalEvent:
+    return JournalEvent(
+        user_id=player_id,
+        event_type='fleet_lost',
+        severity=JournalSeverity.Info,
+        params={
+            'fleet_id': fleet.id,
+            'x': fleet.pos.x,
+            'y': fleet.pos.y,
+        },
+    )
+
+
+def area_discovered(fleet: FleetEntity, area: AreaEntity) -> JournalEvent:
+    return JournalEvent(
+        user_id=fleet.owner_id,
+        event_type='area_discovered',
+        severity=JournalSeverity.Info,
+        emitter_id=fleet.id,
+        emitter_type=JournalEmitterType.Fleet,
+        params={
+            'fleet_id': fleet.id,
+            'fleet_name': fleet.name,
+            'area_id': area.id,
+            'area_name': area.name,
+            'x': area.x,
+            'y': area.y,
         },
     )

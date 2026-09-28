@@ -1,12 +1,17 @@
-from .base import ResolverContext, CommandResolvingError
+from .base import ResolverContext
 from app.entities.player import PlayerEntity
+from app.defs.enums import ObjectType
 from ..handlers.dock_to_platform import DockToPlatformCommandParams
-from .fleet_resolver import fleet_command_resolver
+from ..handlers.move_to_object import MoveToObjectCommandParams
+from .move_to_object_resolver import move_to_object_resolver
 
 
 async def dock_to_platform_resolver(context: ResolverContext, player: PlayerEntity, dto: DockToPlatformCommandParams):
-    await fleet_command_resolver(context, player, dto)
-    
-    platform = await context.client_platform_service.exists(dto.platform_id)
-    if platform is None:
-        raise CommandResolvingError(dto, f'Платформа {dto.platform_id} не существует')
+    await move_to_object_resolver(context, player, MoveToObjectCommandParams(
+        id=dto.id,
+        fleet_id=dto.fleet_id,
+        obj_id=dto.platform_id,
+        obj_type=ObjectType.Platform,
+        clear_queue=dto.clear_queue,
+        on_top=dto.on_top,
+    ))

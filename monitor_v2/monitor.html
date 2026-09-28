@@ -14,7 +14,7 @@
         <div class="panel">
             <strong>Авторизация API:</strong>
             <div class="auth-form">
-                <input type="text" id="emailInput" placeholder="Email" value="player@test.com">
+                <input type="text" id="emailInput" placeholder="Email" value="player_1@test.com">
                 <input type="password" id="passwordInput" placeholder="Пароль" value="12qwaszx">
                 <button id="loginBtn">Войти</button>
             </div>
@@ -126,6 +126,40 @@
 
         <!-- Правая колонка управления -->
         <div class="column">
+            <strong>Карта:</strong>
+            <div id="mapCardContainer">
+                <div class="user-card" id="mapCard" style="opacity: 0.5;">
+                    <div class="user-card-header">
+                        <span class="user-name">Карта</span>
+                        <button type="button" class="toggle-json-btn" id="mapRefreshBtn">Обновить</button>
+                    </div>
+                    <div class="map-section">
+                        <strong>Платформы</strong>
+                        <div id="mapPlatforms" class="map-list">
+                            <div class="map-empty">нет</div>
+                        </div>
+                    </div>
+                    <div class="map-section">
+                        <strong>Сайты</strong>
+                        <div id="mapSites" class="map-list">
+                            <div class="map-empty">нет</div>
+                        </div>
+                    </div>
+                    <div class="map-section">
+                        <strong>Зоны</strong>
+                        <div id="mapAreas" class="map-list">
+                            <div class="map-empty">нет</div>
+                        </div>
+                    </div>
+                    <div class="map-section">
+                        <strong>Флотилии</strong>
+                        <div id="mapFleets" class="map-list">
+                            <div class="map-empty">нет</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <strong>Журнал событий:</strong>
             <div id="journalCardContainer">
                 <div class="user-card" id="journalCard" style="opacity: 0.5;">

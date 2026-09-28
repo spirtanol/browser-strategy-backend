@@ -7,6 +7,7 @@ from app.bootstrap.container import get_context_container
 from app.schemas.auth import LoginRequest, LoginResponse
 from app.schemas.journal import JournalEventOut, MarkJournalReadRequest, JournalUnreadOut
 from app.schemas.player import PlayerSchema
+from app.schemas.player_map import PlayerMapOut
 from app.entities.player import PlayerEntity
 from .deps import get_http_player
 
@@ -37,6 +38,13 @@ def create_api_router(prefix: str, tags: list[str | Enum]) -> APIRouter:
                         email=access.email,
                     ),
                 )
+
+    @router.get('/map', response_model=PlayerMapOut)
+    async def get_map(
+        player: PlayerEntity = Depends(get_http_player),
+    ):
+        async with get_context_container() as container:
+            return await container.client_player_service.get_map(player.id)
 
     @router.get('/journal', response_model=list[JournalEventOut])
     async def list_journal(

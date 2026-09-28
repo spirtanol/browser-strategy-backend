@@ -6,7 +6,7 @@ from app.entities.fleet import FleetEntity
 from app.core.exceptions import ServiceNotLoadedError
 from ..ship.core import CoreShipService
 from app.core.exceptions import FleetNotFoundError
-from app.schemas.fleet import FleetStateOut
+from app.schemas.fleet import FleetStateOut, FleetPosOut
 from app.entities.world import World
 from app.ports.cache import Cache, CacheSet
 from app.ports.broadcast import Broadcast, ChannelMessage
@@ -34,6 +34,14 @@ class CoreFleetService:
         self._loaded: bool = False
         self._pending_removed: dict[int, FleetEntity] = {}
 
+    def _pos_cache_item(self, fleet: FleetEntity) -> CacheSet:
+        dto = FleetPosOut.from_entity(fleet)
+        return CacheSet(
+            key=f'c_pos:fleet:{fleet.id}',
+            value=dto.model_dump_json(),
+            ex=self._save_interval + 10,
+        )
+
     async def _set_cache(self):
         items = []
         for entity in self._identity_map.values():
@@ -43,7 +51,9 @@ class CoreFleetService:
                 value=dto.model_dump_json(),
                 ex=self._save_interval + 10,
             ))
+            items.append(self._pos_cache_item(entity))
             entity.cached = True
+            entity.pos_cached = True
         await self._cache.set_many(items)
 
     async def load(self, world: World):
@@ -102,6 +112,10 @@ class CoreFleetService:
                     ex=self._save_interval + 10,
                 ))
                 entity.cached = True
+
+            if not entity.pos_cached:
+                to_set.append(self._pos_cache_item(entity))
+                entity.pos_cached = True
             
             if self._life_state_registry.is_alive_fleet(entity.id):
                 dto = FleetStateOut.from_entity(entity)
@@ -112,6 +126,7 @@ class CoreFleetService:
 
         for entity in self._pending_removed.values():
             to_delete.append(f'c_fleet:{entity.id}')
+            to_delete.append(f'c_pos:fleet:{entity.id}')
             if self._life_state_registry.is_alive_fleet(entity.id):
                 self._life_state_registry.remove_fleet(entity.id)
                 dto = FleetStateOut.from_entity(entity)
@@ -140,6 +155,7 @@ class CoreFleetService:
             await self.repository.save([fleet])
             self._identity_map[fleet.id] = fleet
             fleet.cached = False
+            fleet.pos_cached = False
 
     def remove_fleet(self, fleet: FleetEntity):
         self._pending_removed[fleet.id] = fleet

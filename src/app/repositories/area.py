@@ -6,6 +6,7 @@ from app.entities.area import AreaEntity
 from app.core.db import AsyncSession
 from app.models.area import AreaModel
 from app.mappers.area import AreaMapper
+from app.schemas.player_map import MapAreaOut
 
 
 class AreaRepository:
@@ -52,6 +53,27 @@ class AreaRepository:
         session = self._session_factory()
         q = sa.Select(sa.Exists(AreaModel))
         return not bool(await session.scalar(q))
+
+    async def find_known(self, ids: set[int]) -> list[MapAreaOut]:
+        if not ids:
+            return []
+        session = self._session_factory()
+        stmt = sa.select(
+            AreaModel.id,
+            AreaModel.x,
+            AreaModel.y,
+            AreaModel.name,
+        ).where(AreaModel.id.in_(ids))
+        result = await session.execute(stmt)
+        return [
+            MapAreaOut(
+                id=row.id,
+                x=row.x,
+                y=row.y,
+                name=row.name,
+            )
+            for row in result
+        ]
 
     async def exists(self, id: int) -> bool:
         session = self._session_factory()

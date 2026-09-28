@@ -413,7 +413,12 @@ class JournalCard {
             move_started: 'Флот {fleet_name} ({fleet_id}) начал движение в точку ({x}, {y})',
             move_arrived: 'Флот {fleet_name} ({fleet_id}) прибыл в точку ({x}, {y})',
             dock_started: 'Флот {fleet_name} ({fleet_id}) швартуется к платформе {platform_name} ({platform_id})',
-            docked: 'Флот {fleet_name} ({fleet_id}) пришвартовался к платформе {platform_name} ({platform_id})'
+            docked: 'Флот {fleet_name} ({fleet_id}) пришвартовался к платформе {platform_name} ({platform_id})',
+            site_discovered: 'Флот {fleet_name} ({fleet_id}) обнаружил месторождение {site_content} ({site_id}) в точке ({x}, {y})',
+            platform_discovered: 'Флот {fleet_name} ({fleet_id}) обнаружил платформу {platform_name} ({platform_id}) в точке ({x}, {y})',
+            area_discovered: 'Флот {fleet_name} ({fleet_id}) обнаружил зону {area_name} ({area_id}) в точке ({x}, {y})',
+            fleet_discovered: '{sensor_kind} {sensor_name} ({sensor_id}) обнаружил флотилию {fleet_id} игрока {owner_name} ({owner_id}) в точке ({x}, {y})',
+            fleet_lost: 'Флотилия {fleet_id} пропала из вида в точке ({x}, {y})'
         };
         this.severityNames = {
             1: 'info',
@@ -554,6 +559,14 @@ class JournalCard {
                     const n = Number(value);
                     return Number.isFinite(n) ? n.toFixed(2) : String(value);
                 }
+                if (key === 'site_content') {
+                    const contents = { 1: 'рыбы', 2: 'феррита', 3: 'пирозина' };
+                    return contents[value] || String(value);
+                }
+                if (key === 'sensor_kind') {
+                    const kinds = { 1: 'флот', 3: 'платформа' };
+                    return kinds[value] || String(value);
+                }
                 return String(value);
             });
             return { title, details: null };
@@ -669,10 +682,99 @@ class JournalCard {
 }
 
 /**
+ * Карточка известной статики игрока
+ */
+class MapCard {
+    constructor(containerId) {
+        this.el = document.getElementById(containerId);
+        this.apiBase = 'http://localhost:4000/api';
+        this.siteTypes = { 1: 'стабильный', 2: 'временный' };
+        this.siteContents = { 1: 'рыба', 2: 'феррит', 3: 'пирозин' };
+        this.ui = {
+            refresh: this.el.querySelector('#mapRefreshBtn'),
+            platforms: this.el.querySelector('#mapPlatforms'),
+            sites: this.el.querySelector('#mapSites'),
+            areas: this.el.querySelector('#mapAreas'),
+            fleets: this.el.querySelector('#mapFleets')
+        };
+        this._loadSeq = 0;
+        this.ui.refresh.onclick = () => this.load();
+    }
+
+    _token() {
+        return document.getElementById('tokenInput').value.trim();
+    }
+
+    _coords(item) {
+        const x = Number(item.x);
+        const y = Number(item.y);
+        const sx = Number.isFinite(x) ? x.toFixed(2) : String(item.x);
+        const sy = Number.isFinite(y) ? y.toFixed(2) : String(item.y);
+        return `${sx}, ${sy}`;
+    }
+
+    async load() {
+        const token = this._token();
+        if (!token) {
+            return;
+        }
+
+        const seq = ++this._loadSeq;
+        try {
+            const response = await fetch(`${this.apiBase}/map`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            const map = await response.json();
+            if (seq !== this._loadSeq) {
+                return;
+            }
+            this.el.style.opacity = '1';
+            this._render(map);
+        } catch (error) {
+            console.error('Ошибка загрузки карты:', error);
+        }
+    }
+
+    _render(map) {
+        this._renderList(this.ui.platforms, map.platforms, item => {
+            const name = escapeHtml(String(item.name));
+            const meta = escapeHtml(`#${item.id} · владелец ${item.owner_name} (${item.owner_id}) · ${this._coords(item)}`);
+            return `<div class="map-item">${name}<span class="map-meta">${meta}</span></div>`;
+        });
+        this._renderList(this.ui.sites, map.sites, item => {
+            const kind = this.siteTypes[item.site_type] || String(item.site_type);
+            const content = this.siteContents[item.site_content] || String(item.site_content);
+            const text = escapeHtml(`#${item.id} · ${this._coords(item)} · ${kind} · ${content}`);
+            return `<div class="map-item">${text}</div>`;
+        });
+        this._renderList(this.ui.areas, map.areas, item => {
+            const name = escapeHtml(String(item.name));
+            const meta = escapeHtml(`#${item.id} · ${this._coords(item)}`);
+            return `<div class="map-item">${name}<span class="map-meta">${meta}</span></div>`;
+        });
+        this._renderList(this.ui.fleets, map.fleets, item => {
+            const text = escapeHtml(`флотилия ${item.id} · ${item.owner_name} (${item.owner_id}) · ${this._coords(item)}`);
+            return `<div class="map-item">${text}</div>`;
+        });
+    }
+
+    _renderList(container, items, lineFn) {
+        if (!items || items.length === 0) {
+            container.innerHTML = '<div class="map-empty">нет</div>';
+            return;
+        }
+        container.innerHTML = items.map(lineFn).join('');
+    }
+}
+
+/**
  * Главный менеджер соединений и диспетчер данных
  */
 class ConnectionManager {
-    constructor(logger, commandPanel, playerCard, fleetCard, shipDetailCard, journalCard) {
+    constructor(logger, commandPanel, playerCard, fleetCard, shipDetailCard, journalCard, mapCard) {
         this.tokenInput = document.getElementById('tokenInput');
         this.connectBtn = document.getElementById('connectBtn');
         
@@ -682,6 +784,7 @@ class ConnectionManager {
         this.fleetCard = fleetCard;
         this.shipDetailCard = shipDetailCard;
         this.journalCard = journalCard;
+        this.mapCard = mapCard;
         this.ws = null;
 
         this.connectBtn.onclick = () => this.connect();
@@ -764,6 +867,7 @@ class ConnectionManager {
             this.logger.info("Соединение установлено");
             this.commandPanel.setSocket(this.ws);
             this.journalCard.load();
+            this.mapCard.load();
         };
 
         this.ws.onmessage = (event) => this.handleMessage(event);
@@ -810,9 +914,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const logger = new Logger('log');
     const shipDetailCard = new ShipDetailCard('shipDetailCard');
     const journalCard = new JournalCard('journalCard');
+    const mapCard = new MapCard('mapCard');
     const commandPanel = new CommandPanel(logger);
 
-    const connectionManager = new ConnectionManager(logger, commandPanel, null, null, shipDetailCard, journalCard);
+    const connectionManager = new ConnectionManager(logger, commandPanel, null, null, shipDetailCard, journalCard, mapCard);
 
     const playerCard = new PlayerCard('playerCard', (fleetId) => {
         connectionManager.selectFleet(fleetId);

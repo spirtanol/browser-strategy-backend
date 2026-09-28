@@ -1,13 +1,21 @@
 from .base import ResolverContext, CommandResolvingError
 from app.entities.player import PlayerEntity
-from ..handlers.fishing import FishingCommandParams
-from .fleet_resolver import fleet_command_resolver 
 from app.defs.enums import ObjectType
+from ..handlers.fishing import FishingCommandParams
+from ..handlers.move_to_object import MoveToObjectCommandParams
+from .move_to_object_resolver import move_to_object_resolver
 
 
 async def fishing_resolver(context: ResolverContext, player: PlayerEntity, dto: FishingCommandParams):
-    await fleet_command_resolver(context, player, dto)
-    
+    await move_to_object_resolver(context, player, MoveToObjectCommandParams(
+        id=dto.id,
+        fleet_id=dto.fleet_id,
+        obj_id=dto.site_id,
+        obj_type=ObjectType.Site,
+        clear_queue=dto.clear_queue,
+        on_top=dto.on_top,
+    ))
+
     fishing_site = await context.client_site_service.find(dto.site_id)
 
     if fishing_site is None:

@@ -10,3 +10,4 @@ RepairCycle: float = 60 * 60 # 1 hour
 WeldingKitHp: float = 100.0  # 1 набор → 100 HP
 HungerThreshold: float = 2.0
 AreaRadius: float = 300.0
+DirectDetectionRadius: float = 10.0

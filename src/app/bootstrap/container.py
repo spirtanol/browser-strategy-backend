@@ -25,6 +25,7 @@ from app.services.auth import AuthService
 from app.services.account import AccountService
 from app.mappers.ship import ShipMapper
 from app.mappers.player import PlayerMapper
+from app.mappers.player_map import PlayerMapMapper
 from app.mappers.platform import PlatformMapper
 from app.mappers.site import SiteMapper
 from app.mappers.fleet import FleetMapper
@@ -32,6 +33,7 @@ from app.services.player.action import PlayerService
 from app.services.player.core import CorePlayerService
 from app.services.player.client import ClientPlayerService
 from app.repositories.player import PlayerRepository
+from app.repositories.player_map import PlayerMapRepository
 from app.services.fleet.core import CoreFleetService, FleetRepository
 from app.services.fleet.action import FleetService
 from app.services.fleet.client import ClientFleetService
@@ -62,6 +64,7 @@ class ResolverContextImpl(ResolverContext):
     market_service: MarketService
     client_site_service: ClientSiteService
     client_fleet_service: ClientFleetService
+    client_player_service: ClientPlayerService
 
 class Container:
     def __init__(self, config: AppSettings):
@@ -128,6 +131,7 @@ class Container:
             market_service=self.market_service,
             client_site_service=self.client_site_service,
             client_fleet_service=self.client_fleet_service,
+            client_player_service=self.client_player_service,
         )
 
     @cached_property
@@ -273,6 +277,17 @@ class Container:
         )
 
     @cached_property
+    def player_map_mapper(self) -> PlayerMapMapper:
+        return PlayerMapMapper()
+
+    @cached_property
+    def player_map_repository(self) -> PlayerMapRepository:
+        return PlayerMapRepository(
+            session_factory=self.get_session,
+            mapper=self.player_map_mapper
+        )
+
+    @cached_property
     def auth_service(self) -> AuthService:
         return AuthService(
             account_repo=self.account_repository,
@@ -290,16 +305,26 @@ class Container:
     def core_player_service(self) -> CorePlayerService:
         return CorePlayerService(
             player_repo=self.player_repository,
+            player_map_repo=self.player_map_repository,
+            player_map_mapper=self.player_map_mapper,
             life_state_registry=self.life_state_registry,
             transaction=self.transaction,
             fleet_service=self.core_fleet_service,
             broadcast=self.broadcast,
+            cache=self.cache,
+            save_interval=int(self.config.save_interval),
         )
 
     @cached_property
     def client_player_service(self) -> ClientPlayerService:
         return ClientPlayerService(
             player_repository=self.player_repository,
+            player_map_repository=self.player_map_repository,
+            player_map_mapper=self.player_map_mapper,
+            platform_repository=self.platform_repository,
+            site_repository=self.site_repository,
+            area_repository=self.area_repository,
+            cache=self.cache,
             subscription=self.subscription,
             life_state_pusher=self.life_state_pusher,
             transaction=self.transaction,
@@ -309,6 +334,7 @@ class Container:
     def player_service(self) -> PlayerService:
         return PlayerService(
             player_repo=self.player_repository,
+            player_map_repo=self.player_map_repository,
             transaction=self.transaction,
         )
 

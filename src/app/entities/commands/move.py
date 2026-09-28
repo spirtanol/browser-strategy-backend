@@ -47,6 +47,7 @@ class MoveCommand(BaseCommand):
             self.world.emit_journal_event(move_arrived(fleet, self.x, self.y))
         elif just_started:
             self.world.emit_journal_event(move_started(fleet, self.x, self.y))
+        fleet.pos_cached = False
 
     def cancel(self):
         if self.fleet.moving_state == MovingState.Move:

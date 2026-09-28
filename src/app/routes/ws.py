@@ -21,6 +21,7 @@ from .deps import get_ws_player
 from app.entities.player import PlayerEntity
 from app.schemas.fleet import FleetStateOut
 from app.schemas.player import PlayerStateOut
+from app.utils.async_helpers import aterminate
 
 
 logger = logging.getLogger("app.core.engine")
@@ -94,13 +95,9 @@ def create_ws_router(prefix: str, tags: list[str | Enum]):
                                         if fleet_id not in (fleet.id for fleet in player_last_state.fleets):
                                             continue
 
-                                        if fleet_state_task:
-                                            fleet_state_task.cancel()
-                                            fleet_state_task = None
-
-                                        if ship_state_task:
-                                            ship_state_task.cancel()
-                                            ship_state_task = None
+                                        await aterminate(ship_state_task, fleet_state_task)
+                                        fleet_state_task = None
+                                        ship_state_task = None
 
                                         selected_fleet_id = fleet_id
                                         fleet_state_task = asyncio.create_task(fleet_state_loop(fleet_id))
@@ -117,9 +114,8 @@ def create_ws_router(prefix: str, tags: list[str | Enum]):
                                         if ship_id not in (ship.id for ship in fleet_last_state.ships):
                                             continue
 
-                                        if ship_state_task:
-                                            ship_state_task.cancel()
-                                            ship_state_task = None
+                                        await aterminate(ship_state_task)
+                                        ship_state_task = None
 
                                         ship_state_task = asyncio.create_task(ship_state_loop(ship_id))
                                 else:
@@ -135,6 +131,9 @@ def create_ws_router(prefix: str, tags: list[str | Enum]):
                                 logger.exception(f'Ошибка обработки команды {str(e)}')
                     except WebSocketDisconnect:
                         pass
+                    finally:
+                        await aterminate(ship_state_task, fleet_state_task)
+                        
 
                 done, pending = await asyncio.wait(
                     [
@@ -145,7 +144,6 @@ def create_ws_router(prefix: str, tags: list[str | Enum]):
                     return_when=asyncio.FIRST_COMPLETED,
                 )
             finally:
-                for task in pending:
-                    task.cancel()
+                await aterminate(*pending)
         
     return router

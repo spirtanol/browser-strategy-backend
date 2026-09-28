@@ -53,6 +53,12 @@ class MoveToObjectCommand(BaseCommand):
                     self.finished = True
                     return
 
+                if target.owner_id != fleet.owner_id:
+                    owner = self.world.find_player(fleet.owner_id)
+                    if owner is None or owner.map is None or target.id not in owner.map.fleets:
+                        self.finished = True
+                        return
+
                 distance = xy.distance(fleet.pos.x, fleet.pos.y, target.pos.x, target.pos.y)
                 if distance <= Consts.ObjectRadius:
                     self._emit_arrived(target.name or None)
